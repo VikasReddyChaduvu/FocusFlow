@@ -1,1156 +1,854 @@
 <!DOCTYPE html>
-<html lang="en" id="html-root" class="dark">
+<html lang="en" id="html-root">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FocusFlow Pro</title>
-    <!-- Dependencies -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script>
         tailwind.config = { 
             darkMode: 'class', 
-            theme: { 
-                extend: { 
-                    colors: { 
-                        bgDark: '#0d1117', 
-                        panelDark: '#161b22', 
-                        borderDark: '#30363d',
-                        brandPurple: '#8b5cf6',
-                        brandBlue: '#3b82f6',
-                        brandGreen: '#2ea043'
-                    },
-                    fontSize: { 'xxs': '0.65rem' },
-                    fontFamily: { sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'] }
-                } 
-            } 
+            theme: { extend: { colors: { primary: '#6366f1', secondary: '#f3f4f6', darkbg: '#0f172a', darkcard: '#1e293b' } } } 
         }
     </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-        
-        body { font-family: 'Inter', sans-serif; background-color: #f6f8fa; color: #24292f; font-size: 13px; line-height: 1.5; overflow: hidden; margin: 0; }
-        .dark body { background-color: #0d1117; color: #c9d1d9; }
-        
-        /* Scrollbar */
+        /* Base & Scrollbars */
+        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s, color 0.3s; overflow: hidden; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background-color: #d0d7de; border-radius: 4px; }
-        .dark ::-webkit-scrollbar-thumb { background-color: #484f58; }
+        ::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background-color: #4b5563; }
         
-        /* UI Components */
-        .card { background: white; border: 1px solid #d0d7de; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(27,31,36,0.04); }
-        .dark .card { background: #161b22; border-color: #30363d; box-shadow: none; }
+        /* Checkbox Styling */
+        .checkbox-cell { width: 22px; height: 22px; border-radius: 6px; border: 2px solid #cbd5e1; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .dark .checkbox-cell { border-color: #4b5563; }
+        .checkbox-cell.checked { background-color: #22c55e; border-color: #22c55e; display: flex; align-items: center; justify-content: center; color: white; transform: scale(1.05); }
+        .checkbox-cell:hover:not(.checked):not(.cursor-not-allowed) { border-color: #6366f1; transform: scale(1.1); }
         
-        .btn { padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease; display: inline-flex; items-center; justify-content: center; gap: 6px; }
-        .btn-primary { background-color: #2ea043; color: white; border-color: rgba(27,31,36,0.15); }
-        .btn-primary:hover { background-color: #2c974b; transform: translateY(-1px); }
-        .btn-brand { background: linear-gradient(135deg, #6366f1, #a855f7); color: white; }
-        .btn-brand:hover { filter: brightness(1.1); transform: translateY(-1px); }
-        .btn-outline { background-color: transparent; border-color: #d0d7de; color: #24292f; }
-        .dark .btn-outline { border-color: #30363d; color: #c9d1d9; }
-        .dark .btn-outline:hover { background-color: #21262d; border-color: #8b949e; }
+        /* Modals & Animations */
+        .modal { display: none; }
+        .modal.active { display: flex; animation: fadeIn 0.2s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         
-        .input-field { width: 100%; padding: 8px 12px; font-size: 13px; border: 1px solid #d0d7de; border-radius: 8px; background-color: #ffffff; color: #24292f; outline: none; transition: border 0.2s; }
-        .dark .input-field { border-color: #30363d; background-color: #0d1117; color: #c9d1d9; }
-        .input-field:focus { border-color: #8b5cf6; box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2); }
-
-        /* Habit Checkboxes for Matrix */
-        .matrix-checkbox { width: 22px; height: 22px; border-radius: 6px; border: 2px solid #30363d; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.1s; background: #0d1117; }
-        .matrix-checkbox.checked { background-color: #2ea043; border-color: #2ea043; color: white; }
-        .matrix-checkbox:hover:not(.checked) { border-color: #8b5cf6; background: rgba(139, 92, 246, 0.1); }
-        .matrix-checkbox.disabled { opacity: 0.3; cursor: not-allowed; border-color: #30363d; background: transparent; }
-
-        /* Focus Mode */
-        body.focus-mode #sidebar, body.focus-mode header > div:last-child > button:not(#focus-btn) { display: none !important; }
-        body.focus-mode #main-content { margin-left: 0 !important; max-width: 900px; margin: 0 auto; }
-        body.focus-mode .card:not(#focus-card) { opacity: 0.2; pointer-events: none; }
-
-        /* Heatmap blocks */
-        .heat-block { width: 12px; height: 12px; border-radius: 3px; display: inline-block; margin: 2px; }
-        .heat-0 { background-color: #161b22; border: 1px solid rgba(255,255,255,0.05); }
-        .heat-1 { background-color: #0e4429; } .heat-2 { background-color: #006d32; }
-        .heat-3 { background-color: #26a641; } .heat-4 { background-color: #39d353; }
-
-        /* Overlays */
-        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; backdrop-filter: blur(4px); align-items: center; justify-content: center; }
-        .overlay.active { display: flex; }
+        /* Hover Actions */
+        .action-icons { display: none; }
+        .hover-container:hover .action-icons { display: flex; animation: slideIn 0.2s ease; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(5px); } to { opacity: 1; transform: translateX(0); } }
         
-        /* Markdown rendering */
-        .markdown-body h1, .markdown-body h2 { font-weight: 600; border-bottom: 1px solid #30363d; padding-bottom: .3em; margin-bottom: 16px; margin-top: 24px; color: white;}
-        .markdown-body p { margin-bottom: 16px; }
-        .markdown-body ul { list-style-type: disc; padding-left: 20px; margin-bottom: 16px; }
-        .markdown-body code { background-color: rgba(110,118,129,0.4); padding: .2em .4em; border-radius: 6px; font-family: monospace; font-size: 85%; }
-        .markdown-body pre { background-color: #161b22; padding: 16px; overflow: auto; border-radius: 8px; border: 1px solid #30363d; margin-bottom: 16px; }
-        .markdown-body pre code { background: transparent; padding: 0; }
+        /* Select & Input resets */
+        select {
+            -webkit-appearance: none; -moz-appearance: none; appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1em;
+        }
+        .time-select { background-image: none; text-align: center; padding-right: 0.5rem; } 
+        .dark input[type="date"]::-webkit-calendar-picker-indicator,
+        .dark input[type="month"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+        
+        /* Toggles */
+        .toggle-checkbox:checked { right: 0; border-color: #6366f1; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #6366f1; }
+        .toggle-checkbox { right: 0; z-index: 1; border-color: #e2e8f0; transition: all 0.3s; }
+        .toggle-label { width: 3rem; height: 1.5rem; background-color: #cbd5e1; border-radius: 9999px; transition: all 0.3s; }
+        
+        /* Utilities */
+        .progress-bar-fill { transition: width 0.4s ease-out; }
+        .dragging { opacity: 0.5; border: 2px dashed #6366f1; }
     </style>
 </head>
-<body class="flex h-screen w-full">
+<body class="text-gray-800 bg-slate-50 dark:bg-darkbg dark:text-gray-100 flex h-screen w-full overflow-hidden">
 
-    <!-- AUTHENTICATION OVERLAY -->
-    <div id="auth-overlay" class="overlay active">
-        <div class="card w-full max-w-md bg-panelDark border-borderDark text-center p-8">
-            <div class="w-16 h-16 bg-gradient-to-br from-brandPurple to-brandBlue rounded-2xl mx-auto flex items-center justify-center mb-6 shadow-lg shadow-brandPurple/20">
-                <i class="fa-solid fa-layer-group text-2xl text-white"></i>
-            </div>
-            <h1 class="text-2xl font-bold text-white mb-2">Welcome to FocusFlow</h1>
-            <p class="text-gray-400 text-sm mb-8">Professional habit tracking and daily planning.</p>
-            
-            <div class="space-y-4 text-left">
-                <div>
-                    <label class="block text-xs font-semibold text-gray-400 mb-1">Display Name</label>
-                    <!-- Pre-filled based on user profile context -->
-                    <input type="text" id="auth-name" value="Vikas Reddy Chaduvu" class="input-field text-base py-3" placeholder="Enter your name">
-                </div>
-                <button onclick="handleLogin()" class="btn btn-brand w-full py-3 text-sm mt-4">Create Workspace <i class="fa-solid fa-arrow-right ml-2"></i></button>
-            </div>
-        </div>
-    </div>
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
 
-    <!-- ONBOARDING OVERLAY -->
-    <div id="onboarding-overlay" class="overlay">
-        <div class="card w-full max-w-3xl bg-panelDark border-borderDark p-0 overflow-hidden">
-            <div class="bg-gradient-to-r from-[#1e1e2e] to-[#161b22] p-6 border-b border-borderDark flex justify-between items-start">
-                <div>
-                    <div class="inline-flex items-center gap-2 px-3 py-1 bg-brandBlue/10 text-brandBlue rounded-full text-xs font-bold mb-3">
-                        <i class="fa-solid fa-book-open"></i> User Manual
-                    </div>
-                    <h2 class="text-2xl font-bold text-white">How to Use FocusFlow</h2>
-                    <p class="text-gray-400 text-sm mt-1">Master the Calendar Ideology, streak preservation, and daily planning.</p>
-                </div>
-                <button onclick="closeOnboarding()" class="text-gray-500 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+    <aside id="sidebar" class="w-64 flex-shrink-0 bg-white dark:bg-darkcard border-r border-gray-200 dark:border-gray-800 flex flex-col transition-transform transform -translate-x-full lg:translate-x-0 fixed lg:relative z-50 h-full shadow-2xl lg:shadow-none">
+        
+        <div class="h-[80px] flex-shrink-0 flex items-center px-6 border-b border-gray-100 dark:border-gray-800/50">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 mr-3 border border-indigo-400 dark:border-indigo-600 flex-shrink-0 relative overflow-hidden">
+                <i class="fa-solid fa-crosshairs text-2xl opacity-100"></i>
             </div>
-            
-            <div class="p-8">
-                <div class="bg-[#1c212b] border border-borderDark rounded-xl p-6 mb-6">
-                    <h3 class="text-white font-bold mb-2 flex items-center gap-2"><i class="fa-solid fa-wand-magic-sparkles text-brandPurple"></i> What is FocusFlow?</h3>
-                    <p class="text-gray-300 text-sm leading-relaxed">FocusFlow is built on the <strong>Calendar Ideology</strong>: rather than treating habits as isolated checkboxes, every single habit is laid out horizontally across the month. Seeing your chain of unbroken days builds undeniable psychological momentum.</p>
-                </div>
-
-                <div class="grid grid-cols-3 gap-6">
-                    <div class="bg-bgDark border border-borderDark p-5 rounded-xl">
-                        <div class="w-8 h-8 rounded-full bg-brandBlue text-white flex items-center justify-center font-bold mb-4">1</div>
-                        <h4 class="text-white font-bold mb-2 text-sm">Create Your Habits</h4>
-                        <p class="text-gray-400 text-xs leading-relaxed">Navigate to the Habits tab, click "+ Create New Habit", choose a category, and assign a priority level to determine XP gains.</p>
-                    </div>
-                    <div class="bg-bgDark border border-borderDark p-5 rounded-xl">
-                        <div class="w-8 h-8 rounded-full bg-brandGreen text-white flex items-center justify-center font-bold mb-4">2</div>
-                        <h4 class="text-white font-bold mb-2 text-sm">Mark Daily Progress</h4>
-                        <p class="text-gray-400 text-xs leading-relaxed">On the Dashboard Calendar Matrix, click any square for today or past days to tick it off and build your chain.</p>
-                    </div>
-                    <div class="bg-bgDark border border-borderDark p-5 rounded-xl">
-                        <div class="w-8 h-8 rounded-full bg-brandPurple text-white flex items-center justify-center font-bold mb-4">3</div>
-                        <h4 class="text-white font-bold mb-2 text-sm">Defend Your Streak</h4>
-                        <p class="text-gray-400 text-xs leading-relaxed">Earn streak badges, level up your XP, and engage Focus Mode during deep work sessions using the Pomodoro timer.</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="bg-bgDark p-4 border-t border-borderDark flex justify-between items-center px-8">
-                <span class="text-xs text-gray-500">Tip: You can reopen this guide anytime from the Profile menu!</span>
-                <button onclick="closeOnboarding()" class="btn btn-brand px-6">Got It, Let's Build Habits!</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- DAILY CHECK-IN MODAL -->
-    <div id="checkin-modal" class="overlay">
-        <div class="card w-full max-w-sm bg-panelDark border-borderDark text-center p-8">
-            <h2 class="text-xl font-bold text-white mb-2">Daily Check-in</h2>
-            <p class="text-gray-400 text-sm mb-6">How is your energy & mood today?</p>
-            <div class="flex justify-center gap-4 text-3xl mb-6">
-                <button onclick="logMood(1)" class="hover:scale-125 hover:-translate-y-2 transition-transform grayscale hover:grayscale-0">😫</button>
-                <button onclick="logMood(2)" class="hover:scale-125 hover:-translate-y-2 transition-transform grayscale hover:grayscale-0">😕</button>
-                <button onclick="logMood(3)" class="hover:scale-125 hover:-translate-y-2 transition-transform grayscale hover:grayscale-0">😐</button>
-                <button onclick="logMood(4)" class="hover:scale-125 hover:-translate-y-2 transition-transform grayscale hover:grayscale-0">🙂</button>
-                <button onclick="logMood(5)" class="hover:scale-125 hover:-translate-y-2 transition-transform grayscale hover:grayscale-0">🤩</button>
-            </div>
-            <p class="text-xs text-gray-500">This helps correlate habits with energy levels in Analytics.</p>
-        </div>
-    </div>
-
-    <!-- ADD HABIT MODAL -->
-    <div id="add-habit-modal" class="overlay">
-        <div class="card w-full max-w-md bg-panelDark border-borderDark p-6">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-lg font-bold text-white">Create New Habit</h2>
-                <button onclick="document.getElementById('add-habit-modal').classList.remove('active')" class="text-gray-500 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-gray-400 mb-1">Habit Name</label>
-                    <input type="text" id="new-habit-name" class="input-field" placeholder="e.g., LeetCode Daily, Machine Learning Course...">
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-400 mb-1">Category</label>
-                        <select id="new-habit-cat" class="input-field">
-                            <option value="Study">Study</option>
-                            <option value="Career">Career</option>
-                            <option value="Health">Health</option>
-                            <option value="Work">Work</option>
-                            <option value="Productivity">Productivity</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-400 mb-1">Priority (XP Reward)</label>
-                        <select id="new-habit-priority" class="input-field">
-                            <option value="30">High (+30 XP)</option>
-                            <option value="20" selected>Medium (+20 XP)</option>
-                            <option value="10">Low (+10 XP)</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            <div class="mt-8 flex justify-end gap-3">
-                <button onclick="document.getElementById('add-habit-modal').classList.remove('active')" class="btn btn-outline">Cancel</button>
-                <button onclick="createHabit()" class="btn btn-primary">Create Habit</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- SIDEBAR -->
-    <aside id="sidebar" class="w-60 flex-shrink-0 border-r border-borderDark bg-bgDark flex flex-col z-20">
-        <div class="h-16 px-6 border-b border-borderDark flex items-center gap-3">
-            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brandPurple to-brandBlue flex items-center justify-center shadow-lg">
-                <i class="fa-solid fa-layer-group text-white text-sm"></i>
-            </div>
-            <span class="font-bold text-base text-white tracking-tight">FocusFlow</span>
+            <span class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 tracking-tight">FocusFlow</span>
         </div>
         
-        <nav class="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
-            <button onclick="nav('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-panelDark text-white border border-borderDark"><i class="fa-solid fa-border-all w-5 text-gray-400"></i> Dashboard</button>
-            <button onclick="nav('habits')" id="nav-habits" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-panelDark hover:text-white transition"><i class="fa-regular fa-square-check w-5"></i> Habits</button>
-            <button onclick="nav('schedule')" id="nav-schedule" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-panelDark hover:text-white transition"><i class="fa-regular fa-calendar w-5"></i> Schedule</button>
-            <button onclick="nav('analytics')" id="nav-analytics" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-panelDark hover:text-white transition"><i class="fa-solid fa-chart-simple w-5"></i> Analytics</button>
-            <button onclick="nav('social')" id="nav-social" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-panelDark hover:text-white transition"><i class="fa-solid fa-user-group w-5"></i> Social</button>
-            <button onclick="nav('profile')" id="nav-profile" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-panelDark hover:text-white transition"><i class="fa-regular fa-user w-5"></i> Profile</button>
-            
-            <div class="pt-6 pb-2 px-3 text-xs font-bold text-gray-600 uppercase tracking-wider">Workspace</div>
-            <button onclick="nav('notes')" id="nav-notes" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-panelDark hover:text-white transition"><i class="fa-solid fa-code w-5"></i> Dev Notes</button>
-            <button onclick="nav('settings')" id="nav-settings" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-panelDark hover:text-white transition"><i class="fa-solid fa-gear w-5"></i> Settings</button>
+        <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto min-h-0">
+            <p class="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 mt-2">Main Menu</p>
+            <div id="nav-dashboard" onclick="switchView('dashboard')" class="sidebar-link flex items-center space-x-3 px-4 py-3 bg-indigo-600 dark:bg-indigo-500 text-white rounded-xl font-medium shadow-md shadow-indigo-500/20 transition cursor-pointer hover:-translate-y-0.5">
+                <i class="fa-solid fa-gauge-high w-5 text-center"></i><span>Dashboard</span>
+            </div>
+            <div id="nav-habits" onclick="switchView('habits')" class="sidebar-link flex items-center space-x-3 px-4 py-3 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl font-medium transition cursor-pointer">
+                <i class="fa-regular fa-square-check w-5 text-center"></i><span>Habits</span>
+            </div>
+            <div id="nav-schedule" onclick="switchView('schedule')" class="sidebar-link flex items-center space-x-3 px-4 py-3 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl font-medium transition cursor-pointer">
+                <i class="fa-regular fa-calendar w-5 text-center"></i><span>Schedule</span>
+            </div>
+            <div id="nav-goals" onclick="switchView('goals')" class="sidebar-link flex items-center space-x-3 px-4 py-3 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl font-medium transition cursor-pointer">
+                <i class="fa-solid fa-bullseye w-5 text-center"></i><span>Goals & Water</span>
+            </div>
+            <div id="nav-notes" onclick="switchView('notes')" class="sidebar-link flex items-center space-x-3 px-4 py-3 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl font-medium transition cursor-pointer">
+                <i class="fa-regular fa-note-sticky w-5 text-center"></i><span>Notes</span>
+            </div>
+            <div id="nav-analytics" onclick="switchView('analytics')" class="sidebar-link flex items-center space-x-3 px-4 py-3 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl font-medium transition cursor-pointer">
+                <i class="fa-solid fa-chart-pie w-5 text-center"></i><span>Analytics</span>
+            </div>
+
+            <p class="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 mt-6">Account</p>
+            <div id="nav-profile" onclick="switchView('profile')" class="sidebar-link flex items-center space-x-3 px-4 py-3 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl font-medium transition cursor-pointer">
+                <i class="fa-regular fa-user w-5 text-center"></i><span>Profile</span>
+            </div>
+            <div id="nav-settings" onclick="switchView('settings')" class="sidebar-link flex items-center space-x-3 px-4 py-3 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl font-medium transition cursor-pointer">
+                <i class="fa-solid fa-gear w-5 text-center"></i><span>Settings</span>
+            </div>
         </nav>
     </aside>
 
-    <!-- MAIN APP AREA -->
-    <div class="flex-1 flex flex-col min-w-0 bg-bgDark" id="main-content">
+    <div class="flex-1 flex flex-col min-w-0 h-full relative bg-[#f4f7fb] dark:bg-darkbg transition-colors">
         
-        <!-- HEADER -->
-        <header class="h-16 border-b border-borderDark flex items-center justify-between px-6 bg-panelDark shrink-0">
-            <!-- Search -->
-            <div class="relative w-64">
-                <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
-                <input type="text" id="global-search" oninput="renderDashboardMatrix(); renderHabitsCards();" placeholder="Search habits..." class="input-field pl-9 py-1.5 bg-bgDark border-borderDark text-xs">
-            </div>
+        <div class="lg:hidden bg-white dark:bg-darkcard px-4 py-3 flex flex-shrink-0 items-center border-b border-gray-200 dark:border-gray-800 shadow-sm z-30">
+            <button onclick="toggleSidebar()" class="text-gray-500 dark:text-gray-400 mr-3"><i class="fa-solid fa-bars text-xl"></i></button>
+            <span class="font-bold text-gray-900 dark:text-white">FocusFlow Menu</span>
+        </div>
+
+        <main class="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8 space-y-8 min-w-0">
             
-            <div class="flex items-center gap-4">
-                <!-- Pomodoro -->
-                <div class="flex items-center gap-2 bg-bgDark border border-borderDark rounded-lg px-3 py-1.5 shadow-inner">
-                    <i class="fa-solid fa-stopwatch text-brandPurple text-sm"></i>
-                    <span id="pomo-display" class="font-mono font-bold text-sm text-white tracking-widest w-12 text-center">25:00</span>
-                    <div class="flex border-l border-borderDark pl-2 gap-2 ml-1">
-                        <button onclick="togglePomo()" id="pomo-play-btn" class="text-gray-400 hover:text-white transition"><i class="fa-solid fa-play text-xs"></i></button>
-                        <button onclick="resetPomo()" class="text-gray-400 hover:text-white transition"><i class="fa-solid fa-rotate-right text-xs"></i></button>
-                    </div>
+            <div class="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-4 xl:gap-0" id="top-header-area">
+                <div class="min-w-0">
+                    <h2 class="text-3xl md:text-4xl font-extrabold tracking-tight truncate" id="welcome-text">Welcome back 👋</h2>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm mt-2 font-medium">Stay consistent and achieve your goals today.</p>
                 </div>
                 
-                <!-- Focus Mode -->
-                <button onclick="toggleFocusMode()" id="focus-btn" class="btn btn-outline border-borderDark text-gray-300 hover:text-white hover:bg-bgDark py-1.5" title="Toggle Deep Focus Mode">
-                    <i class="fa-solid fa-expand text-xs"></i>
-                </button>
-                
-                <!-- Theme (Placeholder functionality for demo, forced dark mode per reqs) -->
-                <button class="text-gray-400 hover:text-white transition"><i class="fa-solid fa-moon"></i></button>
-                
-                <!-- Profile Dropdown Trigger -->
-                <div class="flex items-center gap-2 pl-4 border-l border-borderDark cursor-pointer hover:opacity-80 transition" onclick="nav('profile')">
-                    <div class="w-8 h-8 rounded bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center text-white font-bold text-xs" id="header-avatar">VR</div>
-                    <span class="text-sm font-semibold text-white max-w-[100px] truncate" id="header-name">User</span>
-                    <i class="fa-solid fa-chevron-down text-gray-500 text-xs"></i>
-                </div>
-            </div>
-        </header>
-
-        <!-- CONTENT VIEWS -->
-        <main class="flex-1 overflow-y-auto p-6 md:p-8" id="view-container">
-            
-            <!-- DASHBOARD VIEW -->
-            <div id="view-dashboard" class="view-section max-w-7xl mx-auto space-y-6 block">
-                <div class="flex justify-between items-end mb-8">
-                    <div>
-                        <h1 class="text-2xl font-bold text-white mb-1" id="dash-welcome">Welcome back, User 👋</h1>
-                        <p class="text-gray-400 text-sm">Stay consistent and achieve your goals today.</p>
-                    </div>
-                    <div class="bg-panelDark border border-borderDark rounded-lg px-4 py-2 flex items-center gap-3 text-sm text-gray-300">
-                        <i class="fa-solid fa-chevron-left text-gray-500 cursor-pointer hover:text-white"></i>
-                        <span class="font-semibold" id="dash-month-display">September 2026</span>
-                        <i class="fa-solid fa-chevron-right text-gray-500 cursor-pointer hover:text-white"></i>
-                    </div>
-                </div>
-
-                <!-- KPIs -->
-                <div class="grid grid-cols-4 gap-4">
-                    <div class="card bg-panelDark border-borderDark p-5 flex flex-col gap-3">
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-400 text-xs font-bold uppercase tracking-wider">Completed Tasks</span>
-                            <div class="w-6 h-6 rounded-full bg-brandGreen/20 text-brandGreen flex items-center justify-center"><i class="fa-solid fa-check text-xs"></i></div>
-                        </div>
-                        <div class="flex items-end gap-2">
-                            <span class="text-3xl font-bold text-white" id="kpi-completed">0</span>
-                            <span class="text-sm text-gray-500 mb-1" id="kpi-total">/ 0</span>
-                        </div>
-                    </div>
-                    <div class="card bg-panelDark border-borderDark p-5 flex flex-col gap-3">
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-400 text-xs font-bold uppercase tracking-wider">Pending Tasks</span>
-                            <div class="w-6 h-6 rounded-full bg-orange-500/20 text-orange-500 flex items-center justify-center"><i class="fa-regular fa-clock text-xs"></i></div>
-                        </div>
-                        <div class="flex items-end gap-2">
-                            <span class="text-3xl font-bold text-white" id="kpi-pending">0</span>
-                        </div>
-                    </div>
-                    <div class="card bg-panelDark border-borderDark p-5 flex flex-col gap-3">
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-400 text-xs font-bold uppercase tracking-wider">Daily Progress</span>
-                            <div class="w-6 h-6 rounded-full bg-brandBlue/20 text-brandBlue flex items-center justify-center"><i class="fa-solid fa-arrow-trend-up text-xs"></i></div>
-                        </div>
-                        <div class="flex items-end gap-2">
-                            <span class="text-3xl font-bold text-brandBlue" id="kpi-progress">0%</span>
-                        </div>
-                        <div class="w-full h-1.5 bg-bgDark rounded-full overflow-hidden mt-1"><div id="kpi-progress-bar" class="h-full bg-brandBlue" style="width:0%"></div></div>
-                    </div>
-                    <div class="card bg-panelDark border-borderDark p-5 flex flex-col gap-3">
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-400 text-xs font-bold uppercase tracking-wider">Best Streak</span>
-                            <div class="w-6 h-6 rounded-full bg-pink-500/20 text-pink-500 flex items-center justify-center"><i class="fa-solid fa-fire text-xs"></i></div>
-                        </div>
-                        <div class="flex items-end gap-2">
-                            <span class="text-3xl font-bold text-white" id="kpi-streak">0</span>
-                            <span class="text-sm text-gray-500 mb-1">Days</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- MONTHLY HABIT TRACKER MATRIX -->
-                <div class="card bg-panelDark border-borderDark p-0 overflow-hidden" id="focus-card">
-                    <div class="p-5 border-b border-borderDark flex justify-between items-center">
-                        <div>
-                            <h2 class="text-base font-bold text-white flex items-center gap-2"><i class="fa-regular fa-calendar text-brandBlue"></i> Monthly Habit Tracker</h2>
-                            <p class="text-xs text-gray-400 mt-1">September 2026 • Daily consistency matrix</p>
-                        </div>
-                        <div class="flex gap-4 text-xs font-medium text-gray-400">
-                            <span class="flex items-center gap-1.5"><div class="w-3 h-3 rounded bg-brandGreen"></div> Completed</span>
-                            <span class="flex items-center gap-1.5"><div class="w-3 h-3 rounded border border-brandBlue bg-brandBlue/10"></div> Today</span>
-                            <span class="flex items-center gap-1.5"><div class="w-3 h-3 rounded bg-bgDark border border-borderDark"></div> Not Done</span>
-                        </div>
-                    </div>
+                <div class="flex flex-wrap items-center gap-3 flex-shrink-0">
+                    <button onclick="toggleDarkMode()" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-darkcard border border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition shadow-sm hover:shadow-md hover:-translate-y-0.5 flex-shrink-0" title="Toggle Theme">
+                        <i class="fa-solid fa-moon" id="theme-icon"></i>
+                    </button>
                     
-                    <div class="overflow-x-auto pb-4">
-                        <table class="w-full text-left border-collapse min-w-[800px]" id="matrix-table">
-                            <!-- Matrix generated via JS -->
-                        </table>
+                    <button onclick="alert('There are no notifications at the moment.')" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-darkcard border border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition shadow-sm hover:shadow-md hover:-translate-y-0.5 relative flex-shrink-0" title="Notifications">
+                        <i class="fa-regular fa-bell"></i>
+                    </button>
+                    
+                    <button onclick="switchView('profile')" class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white text-sm shadow-sm hover:shadow-md hover:-translate-y-0.5 transition overflow-hidden border border-gray-200 dark:border-gray-800 flex-shrink-0" id="profile-avatar-btn" title="View Profile">
+                        <img src="" id="top-avatar-img" class="w-full h-full object-cover hidden">
+                        <span id="top-avatar-initials" class="bg-gradient-to-br from-indigo-500 to-purple-500 w-full h-full flex items-center justify-center">US</span>
+                    </button>
+
+                    <div class="bg-white dark:bg-darkcard px-4 py-2.5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 flex items-center space-x-2 text-sm font-semibold text-gray-700 dark:text-gray-200 transition-colors flex-shrink-0">
+                        <i class="fa-regular fa-calendar text-indigo-500"></i>
+                        <span id="current-date-display">Current Date</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="dashboard-view" class="space-y-8 min-w-0 block">
+                
+                <div id="kpi-section" class="grid grid-cols-2 lg:grid-cols-5 gap-5 min-w-0">
+                    <div class="bg-white dark:bg-darkcard p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex items-center space-x-4 transition-all hover:-translate-y-1 hover:shadow-md min-w-0">
+                        <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-green-50 dark:bg-green-500/10 text-green-500 flex items-center justify-center text-lg md:text-xl flex-shrink-0"><i class="fa-solid fa-check-double"></i></div>
+                        <div class="min-w-0"><p class="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wide truncate">Completed</p><p class="text-xl md:text-2xl font-black text-gray-800 dark:text-white mt-0.5" id="kpi-completed">0</p></div>
+                    </div>
+                    <div class="bg-white dark:bg-darkcard p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex items-center space-x-4 transition-all hover:-translate-y-1 hover:shadow-md min-w-0">
+                        <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-yellow-50 dark:bg-yellow-500/10 text-yellow-500 flex items-center justify-center text-lg md:text-xl flex-shrink-0"><i class="fa-regular fa-clock"></i></div>
+                        <div class="min-w-0"><p class="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wide truncate">Pending</p><p class="text-xl md:text-2xl font-black text-gray-800 dark:text-white mt-0.5" id="kpi-pending">0</p></div>
+                    </div>
+                    <div class="bg-white dark:bg-darkcard p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex items-center space-x-4 transition-all hover:-translate-y-1 hover:shadow-md min-w-0">
+                        <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-lg md:text-xl flex-shrink-0"><i class="fa-solid fa-arrow-trend-up"></i></div>
+                        <div class="min-w-0"><p class="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wide truncate">Progress</p><p class="text-xl md:text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-0.5" id="kpi-progress">0%</p></div>
+                    </div>
+                    <div class="bg-white dark:bg-darkcard p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex items-center space-x-4 transition-all hover:-translate-y-1 hover:shadow-md min-w-0">
+                        <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-purple-50 dark:bg-purple-500/10 text-purple-500 flex items-center justify-center text-lg md:text-xl flex-shrink-0"><i class="fa-solid fa-fire-flame-curved"></i></div>
+                        <div class="min-w-0"><p class="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wide truncate">Streak</p><p class="text-xl md:text-2xl font-black text-gray-800 dark:text-white mt-0.5" id="kpi-streak">0</p></div>
+                    </div>
+                    <div class="bg-white dark:bg-darkcard p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex items-center space-x-4 transition-all hover:-translate-y-1 hover:shadow-md min-w-0">
+                        <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-500 flex items-center justify-center text-lg md:text-xl flex-shrink-0"><i class="fa-solid fa-droplet"></i></div>
+                        <div class="min-w-0"><p class="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wide truncate">Water</p><p class="text-xl md:text-2xl font-black text-gray-800 dark:text-white mt-0.5" id="kpi-water">0.0 L</p></div>
                     </div>
                 </div>
 
-                <!-- LOWER DASHBOARD -->
-                <div class="grid grid-cols-3 gap-6">
-                    <div class="col-span-2 card bg-panelDark border-borderDark p-6 h-[320px] flex flex-col">
+                <div id="habits-section" class="grid grid-cols-1 xl:grid-cols-3 gap-6 min-w-0">
+                    <div class="xl:col-span-2 bg-white dark:bg-darkcard rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4 md:p-6 transition-colors min-w-0 overflow-hidden">
                         <div class="flex justify-between items-center mb-6">
-                            <h2 class="text-base font-bold text-white flex items-center gap-2"><i class="fa-solid fa-bolt text-pink-500"></i> Productivity Overview</h2>
-                            <span class="px-3 py-1 bg-bgDark border border-borderDark rounded text-xs font-semibold text-gray-300">Past 14 Days</span>
+                            <h2 class="text-lg font-bold text-gray-900 dark:text-white"><i class="fa-regular fa-calendar-check mr-2 text-indigo-500"></i> Monthly Tracker</h2>
                         </div>
-                        <div class="flex-1 w-full relative">
-                            <canvas id="dashTrendChart"></canvas>
+                        <div class="table-container overflow-x-auto pb-4 w-full">
+                            <table class="w-full text-sm text-left whitespace-nowrap" id="habit-table"></table>
                         </div>
                     </div>
-                    
-                    <div class="col-span-1 card bg-panelDark border-borderDark p-6 h-[320px] overflow-y-auto">
-                        <h2 class="text-base font-bold text-white mb-6">Top Streak Champions</h2>
-                        <div id="streak-champions-list" class="space-y-4">
-                            <!-- Populated via JS -->
+
+                    <div class="bg-white dark:bg-darkcard rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4 md:p-6 flex flex-col transition-colors min-h-[400px] min-w-0">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-lg font-bold text-gray-900 dark:text-white">Today's Habits</h2>
+                            <button onclick="openModal('habitModal')" class="text-xs font-bold bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition shadow-sm hover:shadow flex-shrink-0"><i class="fa-solid fa-plus mr-1"></i> Add</button>
                         </div>
-                        <button onclick="nav('habits')" class="w-full mt-6 py-2 border border-borderDark rounded-lg text-sm text-gray-400 hover:text-white hover:bg-bgDark transition">Manage Habits <i class="fa-solid fa-arrow-up-right-from-square ml-1 text-xs"></i></button>
+                        <div class="space-y-3 flex-1 overflow-y-auto pr-2" id="todays-habits-container"></div>
+                    </div>
+                </div>
+
+                <div id="bottom-section" class="grid grid-cols-1 xl:grid-cols-3 gap-6 min-w-0">
+                    
+                    <div id="schedule-col" class="bg-white dark:bg-darkcard rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4 md:p-6 flex flex-col h-[450px] transition-colors lg:col-span-1 min-w-0">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-lg font-bold text-gray-900 dark:text-white">Today's Schedule</h2>
+                            <button onclick="openModal('scheduleModal')" class="text-xs font-bold bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition shadow-sm hover:shadow flex-shrink-0"><i class="fa-solid fa-plus mr-1"></i> Add</button>
+                        </div>
+                        <div class="space-y-3 overflow-y-auto flex-1 pr-2" id="schedule-container"></div>
+                    </div>
+
+                    <div id="goals-col" class="flex flex-col space-y-6 h-[450px] min-w-0">
+                        <div class="bg-white dark:bg-darkcard rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 transition-colors flex-shrink-0">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-md font-bold text-gray-900 dark:text-white"><i class="fa-solid fa-droplet text-blue-500 mr-2"></i>Water Intake</h2>
+                                <span class="text-xs font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-1 rounded-md" id="water-sub-display">0.0L Today</span>
+                            </div>
+                            <div class="grid grid-cols-4 gap-2 mb-3">
+                                <button onclick="modifyWater(0.25)" class="py-2 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-lg hover:bg-blue-100 dark:hover:bg-blue-500/20 transition">+0.25L</button>
+                                <button onclick="modifyWater(0.5)" class="py-2 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-lg hover:bg-blue-100 dark:hover:bg-blue-500/20 transition">+0.5L</button>
+                                <button onclick="modifyWater(0.75)" class="py-2 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-lg hover:bg-blue-100 dark:hover:bg-blue-500/20 transition">+0.75L</button>
+                                <button onclick="modifyWater(1.0)" class="py-2 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-lg hover:bg-blue-100 dark:hover:bg-blue-500/20 transition">+1.0L</button>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <input type="number" id="customWaterInput" step="0.1" min="0" placeholder="Custom (L)" class="w-full p-2 border border-gray-200 dark:border-gray-700 dark:bg-darkbg dark:text-white rounded-lg text-sm outline-none focus:border-indigo-500 transition">
+                                <button onclick="applyCustomWater(true)" class="w-10 h-10 flex-shrink-0 bg-green-500 text-white rounded-lg hover:bg-green-600 transition shadow-sm" title="Add"><i class="fa-solid fa-plus"></i></button>
+                                <button onclick="applyCustomWater(false)" class="w-10 h-10 flex-shrink-0 bg-red-500 text-white rounded-lg hover:bg-red-600 transition shadow-sm" title="Subtract/Remove"><i class="fa-solid fa-minus"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-darkcard rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 transition-colors flex-1 flex flex-col min-h-0">
+                            <div class="flex justify-between items-center mb-3">
+                                <h2 class="text-md font-bold text-gray-900 dark:text-white">Weekly Goals</h2>
+                                <button onclick="openModal('goalModal')" class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-1.5 rounded-lg hover:bg-indigo-100 transition"><i class="fa-solid fa-plus mr-1"></i> Add Goal</button>
+                            </div>
+                            <div class="overflow-y-auto space-y-2 pr-1 flex-1" id="goals-container"></div>
+                        </div>
+                    </div>
+
+                    <div id="chart-col" class="bg-white dark:bg-darkcard rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 flex flex-col h-[450px] transition-colors lg:col-span-1 min-w-0">
+                        <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Weekly Progress</h2>
+                        <div class="flex-1 w-full mt-4 min-h-[250px] relative"><canvas id="weeklyChart"></canvas></div>
                     </div>
                 </div>
             </div>
 
-            <!-- HABITS VIEW -->
-            <div id="view-habits" class="view-section max-w-7xl mx-auto space-y-6 hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <div>
-                        <h1 class="text-2xl font-bold text-white">All Habits</h1>
-                        <p class="text-gray-400 text-sm mt-1">Manage your daily and weekly habits and track streaks.</p>
+            <div id="analytics-section" class="hidden flex-col space-y-6 min-w-0">
+                <div class="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-darkcard rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 transition-colors gap-4">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white"><i class="fa-solid fa-chart-pie mr-3 text-indigo-500"></i>Data & Insights</h2>
+                    <div class="flex items-center space-x-4 bg-gray-50 dark:bg-darkbg p-1 rounded-xl border border-gray-200 dark:border-gray-700">
+                        <button id="btn-mode-month" onclick="setAnalyticsMode('monthly')" class="px-4 py-1.5 text-sm font-bold bg-indigo-600 text-white rounded-lg shadow-sm">Monthly</button>
+                        <button id="btn-mode-year" onclick="setAnalyticsMode('yearly')" class="px-4 py-1.5 text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white rounded-lg transition">Yearly</button>
                     </div>
-                    <button onclick="document.getElementById('add-habit-modal').classList.add('active')" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Create New Habit</button>
+                    <div id="analytics-time-picker"></div>
                 </div>
                 
-                <div class="bg-panelDark border border-borderDark rounded-xl p-2 flex gap-2 text-sm">
-                    <button class="px-4 py-1.5 bg-bgDark border border-borderDark text-white font-medium rounded-lg shadow-sm">Active</button>
-                    <button class="px-4 py-1.5 text-gray-400 hover:text-white font-medium rounded-lg transition">Paused</button>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="habits-card-grid">
-                    <!-- Cards generated via JS -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 min-w-0">
+                    <div class="lg:col-span-2 bg-white dark:bg-darkcard rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 h-[450px] flex flex-col transition-colors min-w-0">
+                        <h3 class="font-bold text-gray-800 dark:text-gray-100 mb-4 tracking-wide uppercase text-sm" id="analytics-chart-title">Completion Rate (%)</h3>
+                        <div class="flex-1 w-full relative"><canvas id="mainAnalyticsChart"></canvas></div>
+                    </div>
+                    <div class="bg-white dark:bg-darkcard rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 h-[450px] flex flex-col transition-colors min-w-0">
+                        <h3 class="font-bold text-gray-800 dark:text-gray-100 mb-4 tracking-wide uppercase text-sm">Habit Distribution</h3>
+                        <div class="flex-1 w-full relative flex items-center justify-center"><canvas id="categoryPieChart"></canvas></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- SCHEDULE VIEW -->
-            <div id="view-schedule" class="view-section max-w-5xl mx-auto space-y-6 hidden">
-                <div class="flex justify-between items-center mb-6">
-                    <div>
-                        <p class="text-brandBlue text-xs font-bold uppercase tracking-wider mb-1"><i class="fa-regular fa-calendar"></i> Today's Time Blocks</p>
-                        <h1 class="text-2xl font-bold text-white">Schedule & Daily Planner</h1>
-                        <p class="text-gray-400 text-sm mt-1">Saturday, Sep 12, 2026 • Plan and conquer each focus block.</p>
-                    </div>
-                    <button class="btn btn-brand"><i class="fa-solid fa-plus"></i> Add Time Block</button>
+            <div id="notes-section" class="hidden flex-col space-y-6 min-w-0">
+                <div class="bg-white dark:bg-darkcard rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 h-[700px] flex flex-col transition-colors">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6"><i class="fa-regular fa-note-sticky mr-3 text-indigo-500"></i>Personal Notes</h2>
+                    <textarea id="notes-area" oninput="saveNotes()" class="flex-1 w-full p-5 border border-gray-200 dark:border-gray-700 bg-[#f8fafc] dark:bg-darkbg text-gray-800 dark:text-white rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/50 transition resize-none text-base leading-relaxed" placeholder="Type your daily notes, reflections, or journal entries here... Auto-saved."></textarea>
                 </div>
+            </div>
 
-                <div class="grid grid-cols-3 gap-4 mb-6">
-                    <div class="bg-panelDark border border-borderDark p-4 rounded-xl flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-full bg-brandGreen/10 border border-brandGreen/20 flex items-center justify-center text-brandGreen"><i class="fa-solid fa-check"></i></div>
-                        <div><p class="text-gray-400 text-xs font-semibold uppercase">Completed</p><p class="text-xl font-bold text-white">2</p></div>
+            <div id="profile-section" class="hidden flex-col space-y-6 min-w-0">
+                <div class="bg-white dark:bg-darkcard rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-8 relative overflow-hidden transition-colors">
+                    <div class="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-indigo-600 to-purple-600 opacity-90"></div>
+                    <div class="relative z-10 flex flex-col md:flex-row items-center md:items-end md:space-x-8 mt-12">
+                        <div class="relative flex-shrink-0">
+                            <img id="prof-view-avatar" src="" class="w-32 h-32 rounded-full object-cover border-4 border-white dark:border-darkcard shadow-lg bg-gray-100 dark:bg-gray-800 hidden">
+                            <div id="prof-view-initials" class="w-32 h-32 rounded-full border-4 border-white dark:border-darkcard shadow-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-4xl font-bold text-white">US</div>
+                        </div>
+                        <div class="flex-1 mt-4 md:mt-0 text-center md:text-left min-w-0">
+                            <h2 class="text-3xl font-black text-gray-900 dark:text-white truncate" id="prof-view-name">Vikas Reddy</h2>
+                            <p class="text-gray-500 dark:text-gray-400 mt-1 max-w-lg break-words" id="prof-view-bio">Add a bio to your profile to personalize your dashboard.</p>
+                        </div>
+                        <button onclick="openModal('profileModal')" class="mt-6 md:mt-0 px-5 py-2.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold text-sm rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition shadow-sm flex-shrink-0"><i class="fa-solid fa-pen mr-2"></i>EDIT PROFILE</button>
                     </div>
-                    <div class="bg-panelDark border border-borderDark p-4 rounded-xl flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500"><i class="fa-solid fa-play"></i></div>
-                        <div><p class="text-gray-400 text-xs font-semibold uppercase">In Progress</p><p class="text-xl font-bold text-white">1</p></div>
-                    </div>
-                    <div class="bg-panelDark border border-borderDark p-4 rounded-xl flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-full bg-brandBlue/10 border border-brandBlue/20 flex items-center justify-center text-brandBlue"><i class="fa-regular fa-clock"></i></div>
-                        <div><p class="text-gray-400 text-xs font-semibold uppercase">Upcoming</p><p class="text-xl font-bold text-white">3</p></div>
+                    <div class="relative z-10 mt-10 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-gray-100 dark:border-gray-800 pt-8">
+                        <div><p class="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-1">Age</p><p class="text-2xl font-black text-gray-900 dark:text-white" id="prof-view-age">--</p></div>
+                        <div><p class="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-1">Height</p><p class="text-2xl font-black text-gray-900 dark:text-white" id="prof-view-height">-- cm</p></div>
+                        <div><p class="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-1">Weight</p><p class="text-2xl font-black text-gray-900 dark:text-white" id="prof-view-weight">-- kg</p></div>
+                        <div><p class="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-1">Current Streak</p><p class="text-2xl font-black text-purple-500" id="prof-view-streak">--</p></div>
                     </div>
                 </div>
+                <div class="bg-white dark:bg-darkcard rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-8 transition-colors">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6"><i class="fa-solid fa-medal text-yellow-500 mr-2"></i>Achievements & Badges</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="badges-container"></div>
+                </div>
+            </div>
 
-                <div class="space-y-3" id="schedule-list">
-                    <!-- Static schedule as requested by screenshot aesthetic -->
-                    <div class="bg-panelDark border border-borderDark rounded-xl p-4 flex items-center justify-between group">
-                        <div class="flex items-center gap-4">
-                            <i class="fa-regular fa-clock text-gray-500 w-5 text-center"></i>
-                            <div>
-                                <h3 class="text-white font-bold text-sm flex items-center gap-2">Morning Exercise <span class="px-2 py-0.5 rounded bg-pink-500/10 text-pink-500 text-xxs uppercase">Health</span></h3>
-                                <p class="text-gray-400 text-xs mt-0.5">06:00 AM - 07:30 AM</p>
+            <div id="settings-section" class="hidden flex-col space-y-6 max-w-4xl mx-auto min-w-0">
+                <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Settings</h2>
+                <div class="bg-white dark:bg-darkcard rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center mb-4"><i class="fa-solid fa-sliders text-indigo-500 mr-2"></i>App Preferences</h3>
+                    <div class="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-800">
+                        <div><p class="font-bold text-gray-800 dark:text-gray-200">Dark Mode</p><p class="text-sm text-gray-500 dark:text-gray-400">Switch between light and dark themes.</p></div>
+                        <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" name="toggle" id="theme-toggle-setting" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" onchange="toggleDarkMode()"/>
+                            <label for="theme-toggle-setting" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                        </div>
+                    </div>
+                    <div class="py-4">
+                        <div class="flex items-center justify-between mb-4">
+                            <div><p class="font-bold text-gray-800 dark:text-gray-200"><i class="fa-solid fa-droplet text-blue-500 mr-2"></i>Water Reminder</p><p class="text-sm text-gray-500 dark:text-gray-400">Get simulated notifications to drink water.</p></div>
+                            <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                                <input type="checkbox" id="water-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" onchange="saveSettings()"/>
+                                <label for="water-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
                             </div>
                         </div>
-                        <button class="px-3 py-1 rounded border border-brandGreen text-brandGreen text-xs font-semibold bg-brandGreen/10"><i class="fa-solid fa-check mr-1"></i> Completed</button>
-                    </div>
-                    <div class="bg-panelDark border border-borderDark rounded-xl p-4 flex items-center justify-between group">
-                        <div class="flex items-center gap-4">
-                            <i class="fa-regular fa-clock text-gray-500 w-5 text-center"></i>
-                            <div>
-                                <h3 class="text-white font-bold text-sm flex items-center gap-2">LeetCode Practice <span class="px-2 py-0.5 rounded bg-brandBlue/10 text-brandBlue text-xxs uppercase">Study</span></h3>
-                                <p class="text-gray-400 text-xs mt-0.5">08:00 AM - 10:00 AM</p>
-                            </div>
-                        </div>
-                        <button class="px-3 py-1 rounded border border-orange-500 text-orange-500 text-xs font-semibold bg-orange-500/10"><i class="fa-solid fa-play mr-1"></i> In Progress</button>
-                    </div>
-                    <div class="bg-panelDark border border-borderDark rounded-xl p-4 flex items-center justify-between group opacity-60">
-                        <div class="flex items-center gap-4">
-                            <i class="fa-regular fa-clock text-gray-500 w-5 text-center"></i>
-                            <div>
-                                <h3 class="text-white font-bold text-sm flex items-center gap-2">Machine Learning Course <span class="px-2 py-0.5 rounded bg-brandPurple/10 text-brandPurple text-xxs uppercase">Career</span></h3>
-                                <p class="text-gray-400 text-xs mt-0.5">10:30 AM - 01:00 PM</p>
-                            </div>
-                        </div>
-                        <button class="px-3 py-1 rounded border border-borderDark text-gray-400 text-xs font-semibold bg-bgDark"><i class="fa-regular fa-clock mr-1"></i> Upcoming</button>
                     </div>
                 </div>
-            </div>
 
-            <!-- ANALYTICS VIEW -->
-            <div id="view-analytics" class="view-section max-w-7xl mx-auto space-y-6 hidden">
-                <div>
-                    <h1 class="text-2xl font-bold text-white">Performance Analytics</h1>
-                    <p class="text-gray-400 text-sm mt-1">Detailed metrics, streak continuity, completion trends, and consistency insights.</p>
-                </div>
-
-                <!-- 365 Heatmap -->
-                <div class="card bg-panelDark border-borderDark p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-base font-bold text-white flex items-center gap-2"><i class="fa-solid fa-border-all text-gray-400"></i> 365-Day Consistency Heatmap</h2>
-                        <div class="flex items-center gap-2 text-xs text-gray-400">
-                            <span>Less</span>
-                            <span class="heat-block heat-0"></span><span class="heat-block heat-1"></span><span class="heat-block heat-2"></span><span class="heat-block heat-3"></span><span class="heat-block heat-4"></span>
-                            <span>More</span>
-                        </div>
-                    </div>
-                    <div class="overflow-x-auto pb-2">
-                        <div id="heatmap-container" class="flex flex-col flex-wrap h-[100px] content-start gap-[2px]">
-                            <!-- Generated by JS -->
+                <div class="bg-white dark:bg-darkcard rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center mb-4"><i class="fa-solid fa-database text-green-500 mr-2"></i>Data Backup & Restore</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Download your local data as a JSON file, or restore from a previous backup.</p>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <button onclick="exportData()" class="px-5 py-2.5 bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 font-bold rounded-xl hover:bg-green-100 dark:hover:bg-green-500/20 transition shadow-sm flex items-center justify-center"><i class="fa-solid fa-download mr-2"></i>Download JSON</button>
+                        <div class="relative flex-1">
+                            <input type="file" id="importFile" accept=".json" onchange="importData(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                            <button class="w-full px-5 py-2.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition shadow-sm flex items-center justify-center"><i class="fa-solid fa-upload mr-2"></i>Upload Backup</button>
                         </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Radar Chart -->
-                    <div class="card bg-panelDark border-borderDark p-6 h-[350px] flex flex-col">
-                        <h2 class="text-base font-bold text-white mb-2 flex items-center gap-2"><i class="fa-solid fa-layer-group text-brandPurple"></i> Category Balance Radar</h2>
-                        <p class="text-xs text-gray-400 mb-4">Visualizing focus areas across your configured habit categories.</p>
-                        <div class="flex-1 relative w-full flex items-center justify-center">
-                            <canvas id="radarChart"></canvas>
-                        </div>
+                <div class="bg-white dark:bg-darkcard rounded-2xl shadow-sm border border-red-200 dark:border-red-900/50 p-6">
+                    <h3 class="text-lg font-bold text-red-600 dark:text-red-400 flex items-center mb-4"><i class="fa-solid fa-triangle-exclamation mr-2"></i>Danger Zone</h3>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <button onclick="alert('You have been logged out. (Simulation)')" class="px-5 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition shadow-sm border border-gray-200 dark:border-gray-700 flex-1">Logout</button>
+                        <button onclick="resetAllData()" class="px-5 py-2.5 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 transition shadow-sm flex-1">Delete All Data & Reset</button>
                     </div>
-                    
-                    <!-- Mood Correlation -->
-                    <div class="card bg-panelDark border-borderDark p-6 h-[350px] flex flex-col">
-                        <h2 class="text-base font-bold text-white mb-2 flex items-center gap-2"><i class="fa-solid fa-face-smile text-yellow-500"></i> Mood vs. Execution</h2>
-                        <p class="text-xs text-gray-400 mb-4">Correlating daily check-in mood data with habit completion rates.</p>
-                        <div class="flex-1 relative w-full">
-                            <canvas id="moodChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- SOCIAL VIEW -->
-            <div id="view-social" class="view-section max-w-7xl mx-auto space-y-6 hidden">
-                <div class="card bg-gradient-to-r from-brandPurple to-brandBlue border-none p-8 flex justify-between items-center shadow-lg shadow-brandPurple/10">
-                    <div>
-                        <h1 class="text-2xl font-bold text-white mb-2 flex items-center gap-2"><i class="fa-solid fa-user-group"></i> Social Accountability & Squads</h1>
-                        <p class="text-white/80 text-sm max-w-xl">Habit research shows individuals are 65% more likely to reach goals when committed to a partner or team challenge.</p>
-                    </div>
-                    <button class="btn bg-white text-brandBlue hover:bg-gray-100 font-bold px-6 py-2.5">Invite Friends</button>
-                </div>
-
-                <h2 class="text-lg font-bold text-white flex items-center gap-2 mt-8 mb-4"><i class="fa-solid fa-globe text-brandBlue"></i> Active Group Challenges</h2>
-                <div class="grid grid-cols-3 gap-6">
-                    <div class="card bg-panelDark border-borderDark p-6 flex flex-col">
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="w-12 h-12 rounded-xl bg-blue-500/20 text-blue-500 flex items-center justify-center text-xl"><i class="fa-solid fa-droplet"></i></div>
-                            <span class="text-xs font-bold text-brandPurple bg-brandPurple/20 px-2 py-1 rounded">+150 XP</span>
-                        </div>
-                        <h3 class="text-white font-bold text-base mb-2">7-Day Hydration Sprint</h3>
-                        <p class="text-gray-400 text-xs mb-6 flex-1">Drink 2.5L+ water daily with your squad to boost cognition and vitality.</p>
-                        <div class="mb-4">
-                            <div class="flex justify-between text-xs font-semibold mb-1"><span class="text-gray-300">Squad Progress</span><span class="text-white">86%</span></div>
-                            <div class="w-full h-1.5 bg-bgDark rounded-full overflow-hidden"><div class="h-full bg-blue-500 w-[86%]"></div></div>
-                        </div>
-                        <button class="w-full py-2 bg-brandGreen text-white font-bold rounded-lg text-sm shadow-lg shadow-brandGreen/20"><i class="fa-solid fa-check mr-1"></i> Challenge Joined</button>
-                    </div>
-                    
-                    <div class="card bg-panelDark border-borderDark p-6 flex flex-col">
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="w-12 h-12 rounded-xl bg-orange-500/20 text-orange-500 flex items-center justify-center text-xl"><i class="fa-solid fa-code"></i></div>
-                            <span class="text-xs font-bold text-brandPurple bg-brandPurple/20 px-2 py-1 rounded">+300 XP</span>
-                        </div>
-                        <h3 class="text-white font-bold text-base mb-2">100 Days of Code</h3>
-                        <p class="text-gray-400 text-xs mb-6 flex-1">Write code every single day. Perfect for tackling LeetCode or building projects.</p>
-                        <div class="mb-4">
-                            <div class="flex justify-between text-xs font-semibold mb-1"><span class="text-gray-300">Squad Progress</span><span class="text-white">42%</span></div>
-                            <div class="w-full h-1.5 bg-bgDark rounded-full overflow-hidden"><div class="h-full bg-brandBlue w-[42%]"></div></div>
-                        </div>
-                        <button class="w-full py-2 bg-white text-black font-bold rounded-lg text-sm hover:bg-gray-200 transition">Join Challenge &rarr;</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- PROFILE VIEW -->
-            <div id="view-profile" class="view-section max-w-4xl mx-auto space-y-6 hidden">
-                <div class="card bg-panelDark border-borderDark p-8 flex justify-between items-center">
-                    <div class="flex items-center gap-6">
-                        <div class="w-24 h-24 rounded-2xl bg-gradient-to-br from-brandBlue to-brandPurple flex items-center justify-center text-4xl font-bold text-white shadow-lg shadow-brandBlue/20" id="prof-avatar">VR</div>
-                        <div>
-                            <div class="flex items-center gap-3 mb-1">
-                                <h1 class="text-2xl font-bold text-white" id="prof-name">User</h1>
-                                <span class="px-2 py-0.5 bg-bgDark border border-borderDark rounded text-xs font-bold text-brandPurple" id="prof-level-badge">Level 1</span>
-                            </div>
-                            <p class="text-gray-400 text-sm mb-2">Committed to daily habits and disciplined routine.</p>
-                            <p class="text-xs text-gray-500"><i class="fa-solid fa-envelope mr-1"></i> user@focusflow.app</p>
-                        </div>
-                    </div>
-                    <div class="flex flex-col gap-2">
-                        <button class="btn btn-outline"><i class="fa-solid fa-pen text-xs"></i> Edit Bio</button>
-                        <button class="btn border-red-500/30 text-red-400 hover:bg-red-500/10"><i class="fa-solid fa-right-from-bracket text-xs"></i> Logout</button>
-                    </div>
-                </div>
-
-                <div class="bg-gradient-to-r from-brandBlue to-brandPurple rounded-xl p-6 flex justify-between items-center shadow-lg shadow-brandBlue/10">
-                    <div class="flex items-center gap-4 text-white">
-                        <i class="fa-solid fa-shield-halved text-4xl opacity-80"></i>
-                        <div>
-                            <h3 class="font-bold text-lg flex items-center gap-2">Streak Freeze Shields <span class="bg-white text-brandPurple text-xs px-2 py-0.5 rounded-full" id="shield-count">2 Available</span></h3>
-                            <p class="text-white/80 text-sm">Equip a Streak Shield to preserve your streak if you miss a habit due to travel, sickness, or unexpected delays.</p>
-                        </div>
-                    </div>
-                    <button class="bg-white text-brandPurple font-bold px-5 py-2.5 rounded-lg shadow hover:bg-gray-100 transition"><i class="fa-solid fa-bolt text-yellow-500 mr-1"></i> Use Shield</button>
-                </div>
-
-                <div class="grid grid-cols-4 gap-4">
-                    <div class="card bg-panelDark border-borderDark p-4 text-center">
-                        <i class="fa-solid fa-fire text-orange-500 text-xl mb-2"></i>
-                        <p class="text-xs text-gray-400 uppercase font-bold mb-1">Current Streak</p>
-                        <p class="text-2xl font-bold text-white" id="prof-streak">0</p>
-                    </div>
-                    <div class="card bg-panelDark border-borderDark p-4 text-center">
-                        <i class="fa-regular fa-bookmark text-pink-500 text-xl mb-2"></i>
-                        <p class="text-xs text-gray-400 uppercase font-bold mb-1">Best Streak</p>
-                        <p class="text-2xl font-bold text-white" id="prof-best-streak">0</p>
-                    </div>
-                    <div class="card bg-panelDark border-borderDark p-4 text-center">
-                        <i class="fa-regular fa-circle-check text-brandGreen text-xl mb-2"></i>
-                        <p class="text-xs text-gray-400 uppercase font-bold mb-1">Tasks Done</p>
-                        <p class="text-2xl font-bold text-white" id="prof-tasks">0</p>
-                    </div>
-                    <div class="card bg-panelDark border-borderDark p-4 text-center">
-                        <i class="fa-solid fa-wand-magic-sparkles text-brandPurple text-xl mb-2"></i>
-                        <p class="text-xs text-gray-400 uppercase font-bold mb-1">Total XP</p>
-                        <p class="text-2xl font-bold text-white" id="prof-xp">0</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- NOTES VIEW (MARKDOWN) -->
-            <div id="view-notes" class="view-section h-[calc(100vh-140px)] max-w-7xl mx-auto flex flex-col hidden">
-                <div class="flex justify-between items-center mb-4 shrink-0">
-                    <div>
-                        <h1 class="text-2xl font-bold text-white">Developer Notes</h1>
-                        <p class="text-gray-400 text-sm mt-1">Write notes in Markdown. Live preview rendered instantly.</p>
-                    </div>
-                    <button onclick="saveNotes()" class="btn btn-outline text-brandBlue border-borderDark"><i class="fa-solid fa-floppy-disk"></i> Save Document</button>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-6 flex-1 min-h-0">
-                    <textarea id="markdown-input" oninput="renderMdPreview()" class="w-full h-full bg-panelDark border border-borderDark rounded-xl p-6 text-gray-300 font-mono text-sm resize-none focus:border-brandBlue outline-none transition" spellcheck="false"></textarea>
-                    <div id="markdown-preview" class="w-full h-full bg-[#0d1117] border border-borderDark rounded-xl p-8 overflow-y-auto markdown-body shadow-inner"></div>
-                </div>
-            </div>
-
-            <!-- SETTINGS VIEW -->
-            <div id="view-settings" class="view-section max-w-4xl mx-auto space-y-6 hidden">
-                <h1 class="text-2xl font-bold text-white mb-6">Settings</h1>
-                
-                <div class="card bg-panelDark border-borderDark p-6">
-                    <h2 class="text-base font-bold text-white mb-4 border-b border-borderDark pb-2 flex items-center gap-2"><i class="fa-solid fa-link text-brandBlue"></i> External Webhooks</h2>
-                    <p class="text-gray-400 text-sm mb-6">Automatically trigger external workflows (e.g., Zapier, Make) when you complete specific habits or hit daily goals.</p>
-                    
-                    <div class="flex gap-4 mb-6">
-                        <input type="text" id="new-webhook-url" placeholder="https://hook.url/..." class="input-field flex-1 bg-bgDark">
-                        <button onclick="addWebhook()" class="btn btn-primary px-6">Add Integration</button>
-                    </div>
-                    
-                    <div id="webhook-list" class="space-y-3">
-                        <!-- Populated by JS -->
-                    </div>
-                </div>
-
-                <div class="card bg-panelDark border-borderDark p-6 border-red-900/30">
-                    <h2 class="text-base font-bold text-red-500 mb-4 border-b border-borderDark pb-2 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation"></i> Danger Zone</h2>
-                    <p class="text-gray-400 text-sm mb-4">Permanently delete all your habit tracking data, history, and notes. This action cannot be undone.</p>
-                    <button onclick="factoryReset()" class="btn border border-red-500/50 text-red-500 hover:bg-red-500/10">Delete All Data & Reset</button>
                 </div>
             </div>
 
         </main>
     </div>
 
-    <!-- JAVASCRIPT LOGIC -->
+    <div id="goalModal" class="modal fixed inset-0 bg-gray-900/60 dark:bg-black/80 z-50 items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white dark:bg-darkcard rounded-2xl p-6 md:p-8 w-full max-w-md shadow-2xl relative border border-gray-100 dark:border-gray-700">
+            <h2 class="text-xl font-bold mb-6 dark:text-white"><i class="fa-solid fa-bullseye text-indigo-500 mr-2"></i>Add Weekly Goal</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Goal Name</label>
+                    <input type="text" id="goalTitle" placeholder="e.g., Read System Design" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 dark:bg-darkbg dark:text-white rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/50">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Goal Type</label>
+                    <select id="goalType" onchange="toggleGoalTarget()" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 dark:bg-darkbg dark:text-white rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer bg-transparent">
+                        <option value="checkbox" class="bg-white dark:bg-darkcard">Simple Task (Checkbox)</option>
+                        <option value="progress" class="bg-white dark:bg-darkcard">Numeric Target (Progress Bar)</option>
+                    </select>
+                </div>
+                <div id="goalTargetDiv" class="hidden">
+                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Target Number (e.g., 50 pages)</label>
+                    <input type="number" id="goalTarget" min="1" placeholder="50" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 dark:bg-darkbg dark:text-white rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/50">
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3 mt-8">
+                <button onclick="closeModal('goalModal')" class="px-5 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">Cancel</button>
+                <button onclick="saveAdvancedGoal()" class="px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition shadow-md">Add Goal</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="profileModal" class="modal fixed inset-0 bg-gray-900/60 dark:bg-black/80 z-50 items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white dark:bg-darkcard rounded-2xl p-6 md:p-8 w-full max-w-[450px] shadow-2xl relative border border-gray-100 dark:border-gray-700">
+            <h2 class="text-xl font-bold mb-6 dark:text-white flex items-center"><i class="fa-regular fa-user text-indigo-500 mr-2"></i>Edit Profile</h2>
+            <div class="space-y-4">
+                <div><label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Avatar Image URL</label><input type="text" id="profAvatar" placeholder="https://..." class="w-full p-2.5 border border-gray-200 dark:border-gray-700 dark:bg-darkbg dark:text-white rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/50"></div>
+                <div><label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Full Name</label><input type="text" id="profName" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 dark:bg-darkbg dark:text-white rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/50"></div>
+                <div><label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Date of Birth</label><input type="date" id="profDob" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 dark:bg-darkbg dark:text-white rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer"></div>
+                <div class="flex space-x-4">
+                    <div class="w-1/2"><label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Height (cm)</label><input type="number" id="profHeight" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 dark:bg-darkbg dark:text-white rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/50"></div>
+                    <div class="w-1/2"><label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Weight (kg)</label><input type="number" id="profWeight" step="0.1" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 dark:bg-darkbg dark:text-white rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/50"></div>
+                </div>
+                <div><label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Bio</label><textarea id="profBio" rows="2" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 dark:bg-darkbg dark:text-white rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"></textarea></div>
+            </div>
+            <div class="flex justify-end space-x-3 mt-8">
+                <button onclick="closeModal('profileModal')" class="px-5 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">Cancel</button>
+                <button onclick="saveProfile()" class="px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition shadow-md shadow-indigo-500/30">Save Profile</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="habitModal" class="modal fixed inset-0 bg-gray-900/60 dark:bg-black/80 z-50 items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white dark:bg-darkcard rounded-2xl p-6 md:p-8 w-full max-w-md shadow-2xl relative border border-gray-100 dark:border-gray-700">
+            <h2 class="text-xl font-bold mb-6 dark:text-white" id="habitModalTitle">Add New Habit</h2>
+            <input type="hidden" id="editHabitId">
+            <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Habit Name</label>
+            <input type="text" id="habitName" placeholder="e.g. Morning Jog" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 dark:bg-darkbg dark:text-white rounded-xl mb-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500/50">
+            
+            <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Category / Tag</label>
+            <select id="habitCategory" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 dark:bg-darkbg dark:text-white rounded-xl mb-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer bg-transparent">
+                <option value="Health" class="bg-white dark:bg-darkcard">Health</option>
+                <option value="Career" class="bg-white dark:bg-darkcard">Career</option>
+                <option value="Mindset" class="bg-white dark:bg-darkcard">Mindset</option>
+                <option value="Study" class="bg-white dark:bg-darkcard">Study</option>
+                <option value="Finance" class="bg-white dark:bg-darkcard">Finance</option>
+            </select>
+
+            <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Priority</label>
+            <select id="habitPriority" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 dark:bg-darkbg dark:text-white rounded-xl mb-6 text-sm outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer bg-transparent">
+                <option value="High,red" class="bg-white dark:bg-darkcard">High Priority (Red)</option>
+                <option value="Medium,yellow" class="bg-white dark:bg-darkcard">Medium Priority (Yellow)</option>
+                <option value="Low,green" class="bg-white dark:bg-darkcard">Low Priority (Green)</option>
+            </select>
+
+            <div class="flex justify-between items-center mt-2">
+                <button id="deleteHabitBtn" onclick="deleteHabit()" class="px-4 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl hidden transition flex items-center"><i class="fa-solid fa-trash mr-2"></i>Delete</button>
+                <div class="flex space-x-3 ml-auto">
+                    <button onclick="closeModal('habitModal')" class="px-5 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">Cancel</button>
+                    <button onclick="saveHabit()" class="px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition shadow-md shadow-indigo-500/30">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="scheduleModal" class="modal fixed inset-0 bg-gray-900/60 dark:bg-black/80 z-50 items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white dark:bg-darkcard rounded-2xl p-6 md:p-8 w-full max-w-[450px] shadow-2xl border border-gray-100 dark:border-gray-700">
+            <h2 class="text-xl font-bold mb-6 dark:text-white" id="scheduleModalTitle">Add Schedule Item</h2>
+            <input type="hidden" id="editScheduleId">
+            <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Time Slot</label>
+            <div class="flex items-center space-x-2 mb-5">
+                <div class="flex items-center bg-gray-50 dark:bg-darkbg border border-gray-200 dark:border-gray-700 rounded-xl px-2 py-2 w-1/2">
+                    <select id="sHour" class="time-select outline-none text-sm font-bold dark:text-white cursor-pointer w-full text-center bg-transparent"></select>
+                    <span class="dark:text-white font-black mx-1">:</span>
+                    <select id="sMin" class="time-select outline-none text-sm font-bold dark:text-white cursor-pointer w-full text-center bg-transparent"></select>
+                    <select id="sAmPm" class="outline-none text-sm font-bold text-indigo-600 dark:text-indigo-400 ml-1 cursor-pointer bg-transparent">
+                        <option value="AM" class="bg-white dark:bg-darkcard">AM</option><option value="PM" class="bg-white dark:bg-darkcard">PM</option>
+                    </select>
+                </div>
+                <span class="text-gray-400 font-medium">to</span>
+                <div class="flex items-center bg-gray-50 dark:bg-darkbg border border-gray-200 dark:border-gray-700 rounded-xl px-2 py-2 w-1/2">
+                    <select id="eHour" class="time-select outline-none text-sm font-bold dark:text-white cursor-pointer w-full text-center bg-transparent"></select>
+                    <span class="dark:text-white font-black mx-1">:</span>
+                    <select id="eMin" class="time-select outline-none text-sm font-bold dark:text-white cursor-pointer w-full text-center bg-transparent"></select>
+                    <select id="eAmPm" class="outline-none text-sm font-bold text-indigo-600 dark:text-indigo-400 ml-1 cursor-pointer bg-transparent">
+                        <option value="AM" class="bg-white dark:bg-darkcard">AM</option><option value="PM" class="bg-white dark:bg-darkcard">PM</option>
+                    </select>
+                </div>
+            </div>
+            <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Activity Details</label>
+            <input type="text" id="schedActivity" placeholder="Activity Name" autocomplete="off" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 dark:bg-darkbg dark:text-white rounded-xl mb-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500/50">
+            <select id="schedCategory" onchange="toggleCustomCategoryInput()" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 dark:bg-darkbg dark:text-white rounded-xl mb-2 text-sm outline-none cursor-pointer bg-transparent">
+                <option value="Study,blue" class="bg-white dark:bg-darkcard">Study</option>
+                <option value="Health,green" class="bg-white dark:bg-darkcard">Health</option>
+                <option value="Work,yellow" class="bg-white dark:bg-darkcard">Work</option>
+                <option value="Life,purple" class="bg-white dark:bg-darkcard">Life</option>
+                <option value="Custom,gray" class="bg-white dark:bg-darkcard">Custom...</option>
+            </select>
+            <input type="text" id="schedCustomCategory" placeholder="Enter custom category" autocomplete="off" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 dark:bg-darkbg dark:text-white rounded-xl mb-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500/50 hidden">
+            
+            <div class="flex justify-between items-center mt-6">
+                <button id="deleteSchedBtn" onclick="deleteSchedule()" class="px-4 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl hidden transition flex items-center"><i class="fa-solid fa-trash mr-2"></i>Delete</button>
+                <div class="flex space-x-3 ml-auto">
+                    <button onclick="closeModal('scheduleModal')" class="px-5 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">Cancel</button>
+                    <button onclick="saveSchedule()" class="px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition shadow-md shadow-indigo-500/30">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // --- 1. STATE MANAGEMENT ---
-        const DB_KEY = 'focusflow_prod_v2';
-        
-        // Setup dates based on prompt context (Sep 12, 2026)
-        const CURRENT_YEAR = 2026;
-        const CURRENT_MONTH = 8; // September (0-indexed)
-        const TODAY_DAY = 12;
-        const TODAY_STR = `${CURRENT_YEAR}-${String(CURRENT_MONTH+1).padStart(2,'0')}-${String(TODAY_DAY).padStart(2,'0')}`;
-        const DAYS_IN_MONTH = new Date(CURRENT_YEAR, CURRENT_MONTH + 1, 0).getDate(); // 30 for Sept
-        
-        let state = {
-            user: null,
-            xp: 0,
-            level: 1,
-            shields: 2,
-            onboardingDone: false,
-            lastCheckin: "",
-            habits: [], // { id, name, category, priority }
-            completions: {}, // "YYYY-MM-DD_habitId": true
-            moods: {}, // "YYYY-MM-DD": 1-5
-            notes: "",
-            webhooks: []
-        };
-
-        function loadState() {
-            let saved = localStorage.getItem(DB_KEY);
-            if (saved) {
-                state = JSON.parse(saved);
-                if(state.user) {
-                    hideOverlay('auth-overlay');
-                    if(!state.onboardingDone) showOverlay('onboarding-overlay');
-                    else if (state.lastCheckin !== TODAY_STR) showOverlay('checkin-modal');
-                    initApp();
-                }
-            }
-        }
-        function saveState() {
-            localStorage.setItem(DB_KEY, JSON.stringify(state));
-        }
-
-        // --- 2. AUTH & ONBOARDING ---
-        function handleLogin() {
-            let name = document.getElementById('auth-name').value.trim();
-            if(!name) return alert("Please enter a name.");
-            state.user = name;
-            
-            // Contextually prefill Notes to help the user get started
-            if(!state.notes) {
-                state.notes = `# Tech Notes\n\n## Python Practice\n- Arrays and Strings\n- HashMaps\n\n## Machine Learning\n- Review Linear Regression\n\n\`\`\`python\ndef example():\n    print("Hello FocusFlow")\n\`\`\``;
-            }
-
-            saveState();
-            hideOverlay('auth-overlay');
-            showOverlay('onboarding-overlay');
-            initApp();
-        }
-
-        function closeOnboarding() {
-            state.onboardingDone = true;
-            saveState();
-            hideOverlay('onboarding-overlay');
-            if (state.lastCheckin !== TODAY_STR) showOverlay('checkin-modal');
-        }
-
-        function logMood(val) {
-            state.moods[TODAY_STR] = val;
-            state.lastCheckin = TODAY_STR;
-            saveState();
-            hideOverlay('checkin-modal');
-            renderAnalytics(); // Refresh charts
-        }
-
-        function showOverlay(id) { document.getElementById(id).classList.add('active'); }
-        function hideOverlay(id) { document.getElementById(id).classList.remove('active'); }
-
-        // --- 3. CORE UI UPDATES ---
-        function initApp() {
-            updateGlobalHeader();
-            nav('dashboard');
-        }
-
-        function updateGlobalHeader() {
-            let first = state.user.split(' ')[0];
-            let initials = state.user.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
-            
-            document.getElementById('header-name').innerText = first;
-            document.getElementById('header-avatar').innerText = initials;
-            
-            document.getElementById('prof-name').innerText = state.user;
-            document.getElementById('prof-avatar').innerText = initials;
-            document.getElementById('prof-level-badge').innerText = `Level ${state.level}`;
-            document.getElementById('shield-count').innerText = `${state.shields} Available`;
-            document.getElementById('prof-xp').innerText = state.xp;
-            
-            let totalTasks = 0; Object.values(state.completions).forEach(v => { if(v) totalTasks++; });
-            document.getElementById('prof-tasks').innerText = totalTasks;
-            
-            // Calc Streak
-            let streak = calcStreak();
-            document.getElementById('prof-streak').innerText = streak;
-            document.getElementById('prof-best-streak').innerText = Math.max(streak, 0); // simplistic best streak logic
-        }
-
-        function calcStreak() {
-            let streak = 0; let checkDate = new Date(CURRENT_YEAR, CURRENT_MONTH, TODAY_DAY);
-            while(true) {
-                let dStr = `${checkDate.getFullYear()}-${String(checkDate.getMonth()+1).padStart(2,'0')}-${String(checkDate.getDate()).padStart(2,'0')}`;
-                let dailyDone = 0;
-                state.habits.forEach(h => { if(state.completions[`${dStr}_${h.id}`]) dailyDone++; });
-                if (dailyDone > 0) streak++;
-                else if (dStr !== TODAY_STR) break;
-                checkDate.setDate(checkDate.getDate() - 1);
-            }
-            return streak;
-        }
-
-        // Navigation
-        const views = ['dashboard', 'habits', 'schedule', 'analytics', 'social', 'profile', 'notes', 'settings'];
-        function nav(target) {
-            views.forEach(v => {
-                document.getElementById('view-'+v).style.display = 'none';
-                let btn = document.getElementById('nav-'+v);
-                btn.classList.remove('bg-panelDark', 'text-white', 'border', 'border-borderDark');
-                btn.classList.add('text-gray-400');
-            });
-            document.getElementById('view-'+target).style.display = 'block';
-            let activeBtn = document.getElementById('nav-'+target);
-            activeBtn.classList.add('bg-panelDark', 'text-white', 'border', 'border-borderDark');
-            activeBtn.classList.remove('text-gray-400');
-
-            if(target === 'dashboard') { renderDashboard(); }
-            if(target === 'habits') { renderHabitsCards(); }
-            if(target === 'notes') { 
-                document.getElementById('markdown-input').value = state.notes; 
-                renderMdPreview(); 
-            }
-            if(target === 'settings') { renderSettings(); }
-            if(target === 'analytics') { setTimeout(() => { renderAnalytics(); }, 50); }
-        }
-
-        // --- 4. DASHBOARD & MATRIX ---
-        function renderDashboard() {
-            document.getElementById('dash-welcome').innerText = `Welcome back, ${state.user} 👋`;
-            
-            // KPIs
-            let doneToday = 0; let total = state.habits.length;
-            state.habits.forEach(h => { if(state.completions[`${TODAY_STR}_${h.id}`]) doneToday++; });
-            
-            document.getElementById('kpi-completed').innerText = doneToday;
-            document.getElementById('kpi-total').innerText = `/ ${total}`;
-            document.getElementById('kpi-pending').innerText = total - doneToday;
-            
-            let prog = total === 0 ? 0 : Math.round((doneToday/total)*100);
-            document.getElementById('kpi-progress').innerText = prog + '%';
-            document.getElementById('kpi-progress-bar').style.width = prog + '%';
-            document.getElementById('kpi-streak').innerText = calcStreak();
-
-            renderDashboardMatrix();
-            renderTopStreaks();
-            
-            if(window.Chart) {
-                // Mini Trend Chart
-                let ctx = document.getElementById('dashTrendChart').getContext('2d');
-                if(window.dashChartInst) window.dashChartInst.destroy();
-                
-                let tData = []; let tLabels = [];
-                let td = new Date(CURRENT_YEAR, CURRENT_MONTH, TODAY_DAY);
-                td.setDate(td.getDate() - 13);
-                for(let i=0; i<14; i++) {
-                    let ds = `${td.getFullYear()}-${String(td.getMonth()+1).padStart(2,'0')}-${String(td.getDate()).padStart(2,'0')}`;
-                    tLabels.push(td.getDate());
-                    let cd = 0; state.habits.forEach(h=>{if(state.completions[`${ds}_${h.id}`]) cd++;});
-                    tData.push(state.habits.length ? (cd/state.habits.length)*100 : 0);
-                    td.setDate(td.getDate() + 1);
-                }
-                
-                window.dashChartInst = new Chart(ctx, {
-                    type: 'line',
-                    data: { labels: tLabels, datasets: [{ data: tData, borderColor: '#8b5cf6', backgroundColor: 'rgba(139,92,246,0.1)', fill: true, tension: 0.4 }] },
-                    options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false, min: 0, max: 100 } }, elements: { point: { radius: 0, hitRadius: 10, hoverRadius: 4 } } }
+        // --- 1. View & Sidebar Logic ---
+        let currentAnalyticsMode = 'monthly';
+        function switchView(view) {
+            try {
+                ['dashboard', 'habits', 'schedule', 'goals', 'notes', 'analytics', 'profile', 'settings'].forEach(v => {
+                    const el = document.getElementById('nav-' + v);
+                    if(el) el.className = "sidebar-link flex items-center space-x-3 px-4 py-3 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl font-medium transition cursor-pointer";
                 });
-            }
-        }
+                const targetNav = document.getElementById('nav-' + view);
+                if(targetNav) targetNav.className = "sidebar-link flex items-center space-x-3 px-4 py-3 bg-indigo-600 dark:bg-indigo-500 text-white rounded-xl font-medium shadow-md shadow-indigo-500/20 transition cursor-pointer hover:-translate-y-0.5";
 
-        function renderDashboardMatrix() {
-            let search = document.getElementById('global-search').value.toLowerCase();
-            let habitsToRender = state.habits.filter(h => h.name.toLowerCase().includes(search));
-            
-            const table = document.getElementById('matrix-table');
-            if(habitsToRender.length === 0) {
-                table.innerHTML = `<tr><td class="text-center text-gray-500 py-8">No habits configured. Create one to populate the calendar.</td></tr>`;
-                return;
-            }
+                const dashboardViews = ['dashboard-view', 'profile-section', 'settings-section', 'notes-section', 'analytics-section'];
+                dashboardViews.forEach(id => document.getElementById(id).style.display = 'none');
+                document.getElementById('top-header-area').style.display = 'flex';
 
-            let html = `<thead><tr class="border-b border-borderDark text-xs text-gray-500"><th class="py-3 px-4 font-semibold w-48 sticky left-0 bg-panelDark z-10">Habits Overview</th>`;
-            for(let i=1; i<=DAYS_IN_MONTH; i++) {
-                let isToday = i === TODAY_DAY;
-                html += `<th class="py-3 px-1 text-center font-medium ${isToday ? 'text-brandBlue font-bold' : ''}">${i}</th>`;
-            }
-            html += `</tr></thead><tbody class="text-sm">`;
-
-            const colors = { 'Study': 'brandBlue', 'Career': 'brandPurple', 'Health': 'brandGreen', 'Work': 'orange-500', 'Productivity': 'pink-500' };
-
-            habitsToRender.forEach(h => {
-                let catColor = colors[h.category] || 'gray-400';
-                html += `<tr class="border-b border-borderDark hover:bg-[#1c212b] transition">
-                    <td class="py-3 px-4 sticky left-0 bg-panelDark z-10">
-                        <p class="font-bold text-white truncate w-40">${h.name}</p>
-                        <p class="text-[10px] uppercase font-bold text-${catColor} mt-0.5">${h.category}</p>
-                    </td>`;
-                
-                for(let i=1; i<=DAYS_IN_MONTH; i++) {
-                    let dStr = `${CURRENT_YEAR}-${String(CURRENT_MONTH+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-                    let isChecked = state.completions[`${dStr}_${h.id}`];
-                    let isFuture = i > TODAY_DAY;
-                    let isToday = i === TODAY_DAY;
+                if(['dashboard', 'habits', 'schedule', 'goals'].includes(view)) {
+                    document.getElementById('dashboard-view').style.display = 'block';
+                    document.getElementById('kpi-section').style.display = (view === 'dashboard') ? 'grid' : 'none';
+                    document.getElementById('habits-section').style.display = (view === 'dashboard' || view === 'habits') ? 'grid' : 'none';
+                    document.getElementById('bottom-section').style.display = (view === 'dashboard' || view === 'schedule' || view === 'goals') ? 'grid' : 'none';
                     
-                    let bgWrap = isToday ? 'bg-brandBlue/10 border-x border-brandBlue/20' : '';
-                    let cBoxClass = isChecked ? 'matrix-checkbox checked' : 'matrix-checkbox';
-                    if(isFuture) cBoxClass += ' disabled';
-                    
-                    let clickFn = isFuture ? '' : `onclick="toggleHabitCompletion(${h.id}, '${dStr}')"`;
-                    let icon = isChecked ? '<i class="fa-solid fa-check text-[10px]"></i>' : '';
+                    if(['dashboard', 'schedule', 'goals'].includes(view)) {
+                        const schedCol = document.getElementById('schedule-col');
+                        const goalsCol = document.getElementById('goals-col');
+                        const chartCol = document.getElementById('chart-col');
+                        schedCol.className = "bg-white dark:bg-darkcard rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4 md:p-6 flex flex-col h-[450px] transition-colors lg:col-span-1 min-w-0";
+                        goalsCol.className = "flex flex-col space-y-6 h-[450px] min-w-0";
+                        chartCol.className = "bg-white dark:bg-darkcard rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4 md:p-6 flex flex-col h-[450px] transition-colors lg:col-span-1 min-w-0";
 
-                    html += `<td class="py-2 px-1 text-center ${bgWrap}">
-                        <div class="mx-auto ${cBoxClass}" ${clickFn}>${icon}</div>
-                    </td>`;
-                }
-                html += `</tr>`;
-            });
-            html += `</tbody>`;
-            table.innerHTML = html;
-        }
-
-        function renderTopStreaks() {
-            const list = document.getElementById('streak-champions-list');
-            list.innerHTML = '';
-            if(state.habits.length === 0) return list.innerHTML = '<p class="text-xs text-gray-500">No habits tracked yet.</p>';
-            
-            // Calculate streak for each active habit
-            let hStreaks = state.habits.map(h => {
-                let s = 0; let checkDate = new Date(CURRENT_YEAR, CURRENT_MONTH, TODAY_DAY);
-                while(true) {
-                    let dStr = `${checkDate.getFullYear()}-${String(checkDate.getMonth()+1).padStart(2,'0')}-${String(checkDate.getDate()).padStart(2,'0')}`;
-                    if(state.completions[`${dStr}_${h.id}`]) s++;
-                    else if (dStr !== TODAY_STR) break;
-                    checkDate.setDate(checkDate.getDate() - 1);
-                }
-                return { ...h, streak: s };
-            }).sort((a,b) => b.streak - a.streak).slice(0,4);
-
-            hStreaks.forEach(h => {
-                list.innerHTML += `
-                <div class="flex items-center justify-between p-3 rounded-lg bg-bgDark border border-borderDark">
-                    <div>
-                        <p class="text-sm font-bold text-white">${h.name}</p>
-                        <p class="text-xs text-gray-500">${h.category}</p>
-                    </div>
-                    <div class="flex items-center gap-1.5 px-2 py-1 bg-orange-500/10 text-orange-500 rounded text-xs font-bold">
-                        <i class="fa-solid fa-fire"></i> ${h.streak} Days
-                    </div>
-                </div>`;
-            });
-        }
-
-        function toggleHabitCompletion(id, dateStr) {
-            let key = `${dateStr}_${id}`;
-            let h = state.habits.find(x=>x.id===id);
-            if(state.completions[key]) {
-                delete state.completions[key];
-                state.xp = Math.max(0, state.xp - parseInt(h.priority));
-            } else {
-                state.completions[key] = true;
-                state.xp += parseInt(h.priority);
-                // Level up logic
-                state.level = Math.floor(state.xp / 100) + 1;
-                // Webhook trigger if today
-                if(dateStr === TODAY_STR) triggerWebhooks(h.name);
-            }
-            saveState();
-            updateGlobalHeader();
-            renderDashboard();
-            if(document.getElementById('view-habits').style.display !== 'none') renderHabitsCards();
-        }
-
-        // --- 5. HABITS CARDS ---
-        function createHabit() {
-            let name = document.getElementById('new-habit-name').value.trim();
-            let cat = document.getElementById('new-habit-cat').value;
-            let prio = document.getElementById('new-habit-priority').value;
-            
-            if(!name) return alert("Enter a name.");
-            state.habits.push({ id: Date.now(), name, category: cat, priority: prio });
-            saveState();
-            hideOverlay('add-habit-modal');
-            if(document.getElementById('view-habits').style.display !== 'none') renderHabitsCards();
-            if(document.getElementById('view-dashboard').style.display !== 'none') renderDashboard();
-        }
-
-        function renderHabitsCards() {
-            let search = document.getElementById('global-search').value.toLowerCase();
-            let habitsToRender = state.habits.filter(h => h.name.toLowerCase().includes(search));
-            
-            const grid = document.getElementById('habits-card-grid');
-            grid.innerHTML = '';
-            
-            if(habitsToRender.length === 0) {
-                grid.innerHTML = '<p class="text-gray-500 col-span-3">No habits found.</p>'; return;
-            }
-
-            const colors = { 'Study': 'bg-brandBlue', 'Career': 'bg-brandPurple', 'Health': 'bg-brandGreen', 'Work': 'bg-orange-500', 'Productivity': 'bg-pink-500' };
-
-            habitsToRender.forEach(h => {
-                let isDone = state.completions[`${TODAY_STR}_${h.id}`];
-                let bgC = colors[h.category] || 'bg-gray-500';
-                
-                // quick streak calc
-                let s = 0; let checkDate = new Date(CURRENT_YEAR, CURRENT_MONTH, TODAY_DAY);
-                while(true) {
-                    let dStr = `${checkDate.getFullYear()}-${String(checkDate.getMonth()+1).padStart(2,'0')}-${String(checkDate.getDate()).padStart(2,'0')}`;
-                    if(state.completions[`${dStr}_${h.id}`]) s++; else if(dStr!==TODAY_STR) break;
-                    checkDate.setDate(checkDate.getDate() - 1);
-                }
-
-                grid.innerHTML += `
-                <div class="card bg-panelDark border-borderDark p-5 flex flex-col relative group">
-                    <button onclick="deleteHabit(${h.id})" class="absolute top-4 right-4 text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-trash"></i></button>
-                    <div class="flex items-center gap-3 mb-6">
-                        <div class="w-10 h-10 rounded-lg bg-bgDark border border-borderDark flex items-center justify-center text-gray-400">
-                            <i class="fa-solid fa-layer-group"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-white font-bold text-base leading-tight truncate w-48">${h.name}</h3>
-                            <p class="text-xs text-gray-400 mt-1 flex items-center gap-1.5"><div class="w-2 h-2 rounded-full ${bgC}"></div> ${h.category}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="flex justify-between items-end mb-3">
-                        <div><p class="text-[10px] uppercase font-bold text-orange-500 mb-0.5"><i class="fa-solid fa-fire mr-1"></i> Streak</p><p class="text-white font-bold">${s} days</p></div>
-                        <div class="text-right"><p class="text-[10px] uppercase font-bold text-gray-500 mb-0.5">Reward</p><p class="text-white font-bold">+${h.priority} XP</p></div>
-                    </div>
-                    
-                    <div class="w-full h-1 bg-bgDark rounded-full mb-4 overflow-hidden"><div class="h-full ${bgC} w-full opacity-${s>0?'100':'0'}"></div></div>
-                    
-                    <div class="mt-auto flex justify-between items-center">
-                        <span class="text-xs font-semibold ${isDone ? 'text-brandGreen' : 'text-gray-500'}">${isDone ? 'Completed today! 🎉' : 'Pending for today'}</span>
-                        <button onclick="toggleHabitCompletion(${h.id}, '${TODAY_STR}')" class="btn ${isDone ? 'bg-brandGreen/20 text-brandGreen border border-brandGreen/30' : 'bg-bgDark text-white border border-borderDark hover:bg-gray-800'} text-xs px-4">
-                            ${isDone ? '<i class="fa-solid fa-check mr-1"></i> Done' : 'Complete'}
-                        </button>
-                    </div>
-                </div>`;
-            });
-        }
-
-        function deleteHabit(id) {
-            if(confirm("Delete habit? Data will be lost.")) {
-                state.habits = state.habits.filter(h=>h.id !== id);
-                saveState(); renderHabitsCards();
-            }
-        }
-
-        // --- 6. POMODORO / FOCUS MODE ---
-        let pTime = 25 * 60; let pTimer = null; let isFocusMode = false;
-        
-        function updatePomoUI() {
-            let m = Math.floor(pTime/60).toString().padStart(2,'0');
-            let s = (pTime%60).toString().padStart(2,'0');
-            document.getElementById('pomo-display').innerText = `${m}:${s}`;
-        }
-        function togglePomo() {
-            let btn = document.getElementById('pomo-play-btn');
-            if(pTimer) {
-                clearInterval(pTimer); pTimer = null;
-                btn.innerHTML = '<i class="fa-solid fa-play text-xs"></i>';
-            } else {
-                btn.innerHTML = '<i class="fa-solid fa-pause text-xs"></i>';
-                if(!isFocusMode) toggleFocusMode(); // Auto focus
-                pTimer = setInterval(() => {
-                    pTime--; updatePomoUI();
-                    if(pTime <= 0) {
-                        clearInterval(pTimer); pTimer = null;
-                        btn.innerHTML = '<i class="fa-solid fa-play text-xs"></i>';
-                        alert("Session complete!"); resetPomo();
+                        if(view === 'dashboard') { schedCol.style.display = 'flex'; goalsCol.style.display = 'flex'; chartCol.style.display = 'flex'; } 
+                        else if (view === 'schedule') { schedCol.style.display = 'flex'; schedCol.classList.add('lg:col-span-3'); goalsCol.style.display = 'none'; chartCol.style.display = 'none'; } 
+                        else if (view === 'goals') { schedCol.style.display = 'none'; goalsCol.style.display = 'flex'; goalsCol.classList.add('lg:col-span-3'); chartCol.style.display = 'none'; }
                     }
-                }, 1000);
-            }
-        }
-        function resetPomo() {
-            if(pTimer) clearInterval(pTimer);
-            pTimer = null; pTime = 25 * 60;
-            document.getElementById('pomo-play-btn').innerHTML = '<i class="fa-solid fa-play text-xs"></i>';
-            updatePomoUI();
-        }
-        function toggleFocusMode() {
-            isFocusMode = !isFocusMode;
-            if(isFocusMode) document.body.classList.add('focus-mode');
-            else document.body.classList.remove('focus-mode');
-        }
-
-        // --- 7. ANALYTICS ---
-        function renderAnalytics() {
-            // Heatmap (365 days backwards from current context date)
-            const container = document.getElementById('heatmap-container');
-            container.innerHTML = '';
-            
-            let d = new Date(CURRENT_YEAR, CURRENT_MONTH, TODAY_DAY); 
-            d.setDate(d.getDate() - 364); // start a year ago
-            
-            let curCol = document.createElement('div'); curCol.className = 'flex flex-col gap-[2px]';
-            for(let i=0; i<365; i++) {
-                let ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-                let count = 0; state.habits.forEach(h => { if(state.completions[`${ds}_${h.id}`]) count++; });
+                } 
+                else if(view === 'profile') { document.getElementById('profile-section').style.display = 'flex'; document.getElementById('top-header-area').style.display = 'none'; }
+                else if(view === 'settings') { document.getElementById('settings-section').style.display = 'flex'; document.getElementById('top-header-area').style.display = 'none'; }
+                else if(view === 'notes') { document.getElementById('notes-section').style.display = 'flex'; }
+                else if(view === 'analytics') { document.getElementById('analytics-section').style.display = 'flex'; setTimeout(() => setAnalyticsMode(currentAnalyticsMode), 50); }
                 
-                let lvl = 0;
-                if(count > 0) {
-                    let p = count / (state.habits.length||1);
-                    if(p<=0.3) lvl = 1; else if(p<=0.6) lvl = 2; else if(p<=0.9) lvl = 3; else lvl = 4;
+                if(window.innerWidth < 1024) {
+                    document.getElementById('sidebar').classList.add('-translate-x-full');
+                    document.getElementById('sidebar-overlay').classList.add('hidden');
                 }
+            } catch(e) { console.error(e); }
+        }
+
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); document.getElementById('sidebar-overlay').classList.toggle('hidden'); }
+
+        // --- 2. Initial Setup & Theme ---
+        function populateTimeDropdowns() {
+            let optClass = "bg-white text-gray-900 dark:bg-darkcard dark:text-white";
+            let hOpts = ''; for(let i=1; i<=12; i++) { let v = String(i).padStart(2, '0'); hOpts += `<option class="${optClass}" value="${v}">${v}</option>`; }
+            let mOpts = ''; for(let i=0; i<60; i+=5) { let v = String(i).padStart(2, '0'); mOpts += `<option class="${optClass}" value="${v}">${v}</option>`; }
+            ['sHour', 'eHour'].forEach(id => { let el = document.getElementById(id); if(el) el.innerHTML = hOpts; });
+            ['sMin', 'eMin'].forEach(id => { let el = document.getElementById(id); if(el) el.innerHTML = mOpts; });
+        }
+
+        let isDarkMode = localStorage.getItem('focusflow_dark') === 'true';
+        function applyTheme() {
+            const root = document.getElementById('html-root'); const toggle = document.getElementById('theme-toggle-setting');
+            if(isDarkMode) { root.classList.add('dark'); if(toggle) toggle.checked = true; document.getElementById('theme-icon').className = 'fa-solid fa-sun'; } 
+            else { root.classList.remove('dark'); if(toggle) toggle.checked = false; document.getElementById('theme-icon').className = 'fa-solid fa-moon'; }
+            populateTimeDropdowns(); 
+        }
+        function toggleDarkMode() { isDarkMode = !isDarkMode; localStorage.setItem('focusflow_dark', isDarkMode); applyTheme(); updateChart(); if(document.getElementById('analytics-section').style.display === 'flex') setAnalyticsMode(currentAnalyticsMode); }
+
+        // --- 3. Data Architecture (BUMPED TO V16 FOR CLEAN SLATE) ---
+        const STORAGE_KEY = 'focusflow_pro_v16_final'; 
+        const dateObj = new Date();
+        const currentMonth = dateObj.getMonth(); const currentYear = dateObj.getFullYear(); const todayDay = dateObj.getDate();
+        const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+        const currentMonthKey = `${currentYear}-${currentMonth}`;
+        const todayStr = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(todayDay).padStart(2,'0')}`;
+
+        function getInitialData() {
+            try {
+                let raw = localStorage.getItem(STORAGE_KEY);
+                let data = raw ? JSON.parse(raw) : null;
+                if(!data) throw new Error("No data");
                 
-                let b = document.createElement('div'); b.className = `heat-block heat-${lvl}`; b.title = `${count} tasks on ${ds}`;
-                curCol.appendChild(b);
-                if(curCol.children.length === 7) { container.appendChild(curCol); curCol = document.createElement('div'); curCol.className = 'flex flex-col gap-[2px]'; }
-                d.setDate(d.getDate() + 1);
+                return {
+                    profile: data.profile || { name: "Vikas Reddy", dob: "2000-01-01", bio: "", height: "178", weight: "67.0", avatar: "" },
+                    settings: data.settings || { waterReminder: true, waterHours: 1, waterMins: 0 },
+                    habits: Array.isArray(data.habits) ? data.habits : [],
+                    completions: data.completions || {}, 
+                    schedule: Array.isArray(data.schedule) ? data.schedule : [],
+                    weeklyGoals: Array.isArray(data.weeklyGoals) ? data.weeklyGoals : [], 
+                    waterIntake: data.waterIntake || {}, 
+                    notes: data.notes || ""
+                };
+            } catch(e) {
+                return {
+                    profile: { name: "Vikas Reddy", dob: "2000-01-01", bio: "", height: "178", weight: "67.0", avatar: "" },
+                    settings: { waterReminder: true, waterHours: 1, waterMins: 0 },
+                    habits: [
+                        { id: 1, name: "Morning DSA", category: "Study", priority: "High", color: "red" },
+                        { id: 2, name: "Python", category: "Career", priority: "Medium", color: "yellow" },
+                        { id: 3, name: "System Design", category: "Study", priority: "Low", color: "green" }
+                    ],
+                    completions: {}, schedule: [{ id: 1, time: "06:00 AM - 07:00 AM", activity: "Morning Exercise", category: "Health", color: "green" }],
+                    weeklyGoals: [], waterIntake: {}, notes: ""
+                };
             }
-            if(curCol.children.length>0) container.appendChild(curCol);
+        }
+        let appData = getInitialData();
 
-            // Charts
-            if(!window.Chart) return;
-            const gridCol = '#30363d'; const textCol = '#8b949e';
+        function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); renderAll(); }
+        function saveSettings() { appData.settings.waterReminder = document.getElementById('water-toggle').checked; appData.settings.waterHours = document.getElementById('water-hours').value; appData.settings.waterMins = document.getElementById('water-mins').value; saveData(); }
+        function resetAllData() { if(confirm("Delete ALL tracking data? Profile remains.")) { appData.habits = []; appData.completions = {}; appData.schedule = []; appData.weeklyGoals = []; appData.waterIntake = {}; appData.notes = ""; saveData(); switchView('dashboard'); } }
+        function calculateAge(dobStr) { if(!dobStr) return "--"; let dob = new Date(dobStr); let ageDate = new Date(Date.now() - dob.getTime()); return Math.abs(ageDate.getUTCFullYear() - 1970); }
 
-            // Radar
-            let cats = { 'Study':0, 'Career':0, 'Health':0, 'Work':0, 'Productivity':0 };
-            state.habits.forEach(h => {
-                let ds = `${CURRENT_YEAR}-${String(CURRENT_MONTH+1).padStart(2,'0')}-${String(TODAY_DAY).padStart(2,'0')}`;
-                if(state.completions[`${ds}_${h.id}`]) cats[h.category] = (cats[h.category]||0)+1;
-            });
-            let rCtx = document.getElementById('radarChart').getContext('2d');
-            if(window.rChartInst) window.rChartInst.destroy();
-            window.rChartInst = new Chart(rCtx, {
-                type: 'radar',
-                data: { labels: Object.keys(cats), datasets: [{ data: Object.values(cats), backgroundColor: 'rgba(139, 92, 246, 0.3)', borderColor: '#8b5cf6', borderWidth: 2, pointBackgroundColor: '#8b5cf6' }] },
-                options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { r: { ticks: { display: false }, grid: { color: gridCol }, angleLines: { color: gridCol }, pointLabels: { color: textCol, font: {size: 11, family: 'Inter'} } } } }
-            });
+        function calculateStreak() {
+            let streak = 0; let checkDate = new Date();
+            while(true) {
+                let y = checkDate.getFullYear(); let m = checkDate.getMonth(); let d = checkDate.getDate();
+                let mKey = `${y}-${m}`; let dailyCompleted = 0;
+                if(appData.habits) { appData.habits.forEach(h => { if(appData.completions[`${mKey}_${h.id}_${d}`]) dailyCompleted++; }); }
+                if (dailyCompleted > 0) streak++;
+                else if (y === dateObj.getFullYear() && m === dateObj.getMonth() && d === dateObj.getDate()) {} 
+                else break; checkDate.setDate(checkDate.getDate() - 1); 
+            } return streak;
+        }
 
-            // Mood vs Execution
-            let mLabels=[], mData=[], eData=[];
-            let md = new Date(CURRENT_YEAR, CURRENT_MONTH, TODAY_DAY); md.setDate(md.getDate() - 6);
-            for(let i=0; i<7; i++) {
-                let ds = `${md.getFullYear()}-${String(md.getMonth()+1).padStart(2,'0')}-${String(md.getDate()).padStart(2,'0')}`;
-                mLabels.push(String(md.getDate()).padStart(2,'0'));
-                mData.push(state.moods[ds] || 0);
+        // --- 4. Core Render Functions ---
+        function renderAll() {
+            try {
+                const firstName = appData.profile.name.split(' ')[0] || "User"; const initials = (appData.profile.name.substring(0,2) || "US").toUpperCase();
+                document.getElementById('welcome-text').innerHTML = `Welcome back, <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500">${firstName}</span> 👋`;
                 
-                let ed=0; state.habits.forEach(h=>{if(state.completions[`${ds}_${h.id}`]) ed++;});
-                eData.push(state.habits.length ? (ed/state.habits.length)*5 : 0); // Scale to 5 to match mood
-                md.setDate(md.getDate() + 1);
+                // Avatars
+                let avatarImg = document.getElementById('top-avatar-img'); let avatarIni = document.getElementById('top-avatar-initials');
+                let pAvatarImg = document.getElementById('prof-view-avatar'); let pAvatarIni = document.getElementById('prof-view-initials');
+                if(appData.profile.avatar) { avatarImg.src = appData.profile.avatar; avatarImg.classList.remove('hidden'); avatarIni.classList.add('hidden'); pAvatarImg.src = appData.profile.avatar; pAvatarImg.classList.remove('hidden'); pAvatarIni.classList.add('hidden'); } 
+                else { avatarIni.innerText = initials; avatarImg.classList.add('hidden'); avatarIni.classList.remove('hidden'); pAvatarIni.innerText = initials; pAvatarImg.classList.add('hidden'); pAvatarIni.classList.remove('hidden'); }
+                
+                document.getElementById('current-date-display').innerText = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                document.getElementById('notes-area').value = appData.notes || "";
+                document.getElementById('prof-view-name').innerText = appData.profile.name || "Unknown User"; document.getElementById('prof-view-bio').innerText = appData.profile.bio || "Add a bio."; document.getElementById('prof-view-age').innerText = calculateAge(appData.profile.dob); document.getElementById('prof-view-height').innerText = (appData.profile.height || "--") + " cm"; document.getElementById('prof-view-weight').innerText = (appData.profile.weight || "--") + " kg"; document.getElementById('prof-view-streak').innerText = calculateStreak();
+                
+                if(appData.settings) {
+                    document.getElementById('water-toggle').checked = appData.settings.waterReminder || false;
+                    document.getElementById('water-hours').value = appData.settings.waterHours || 1;
+                    document.getElementById('water-mins').value = appData.settings.waterMins || 0;
+                }
+            } catch(e) { console.error("Header rendering error", e); }
+            
+            try { renderHabitGrid(); } catch(e) { console.error("Grid error", e); }
+            try { renderTodaysHabits(); } catch(e) { console.error("Today habits error", e); }
+            try { renderSchedule(); } catch(e) { console.error("Schedule error", e); }
+            try { renderWeeklyGoals(); } catch(e) { console.error("Goals error", e); }
+            try { renderBadges(); } catch(e) { console.error("Badges error", e); }
+            try { updateKPIs(); } catch(e) { console.error("KPI error", e); }
+            try { updateChart(); } catch(e) { console.error("Chart error", e); }
+            
+            try { if(document.getElementById('analytics-section').style.display === 'flex') setAnalyticsMode(currentAnalyticsMode); } catch(e) {}
+        }
+
+        function updateKPIs() {
+            let totalHabits = appData.habits ? appData.habits.length : 0; let habitsCompleted = 0;
+            if(appData.habits) { appData.habits.forEach(h => { if(appData.completions[`${currentMonthKey}_${h.id}_${todayDay}`]) habitsCompleted++; }); }
+            let progress = totalHabits === 0 ? 0 : Math.round((habitsCompleted / totalHabits) * 100);
+            let water = appData.waterIntake[todayStr] || 0;
+            
+            document.getElementById('kpi-completed').innerText = habitsCompleted; document.getElementById('kpi-pending').innerText = totalHabits - habitsCompleted; document.getElementById('kpi-progress').innerText = progress + '%'; document.getElementById('kpi-water').innerText = water.toFixed(1) + ' L'; document.getElementById('water-sub-display').innerText = water.toFixed(1) + 'L Today'; document.getElementById('kpi-streak').innerText = calculateStreak();
+        }
+
+        // --- Drag and Drop Logic ---
+        let dragSrcIndex = null;
+        function dragStart(e, idx) { dragSrcIndex = idx; e.dataTransfer.effectAllowed = 'move'; setTimeout(() => e.target.classList.add('dragging'), 0); }
+        function dragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+        function dragDrop(e, idx) {
+            e.stopPropagation();
+            if (dragSrcIndex !== null && dragSrcIndex !== idx) {
+                let draggedItem = appData.habits.splice(dragSrcIndex, 1)[0];
+                appData.habits.splice(idx, 0, draggedItem);
+                saveData();
             }
-            let mCtx = document.getElementById('moodChart').getContext('2d');
-            if(window.mChartInst) window.mChartInst.destroy();
-            window.mChartInst = new Chart(mCtx, {
-                type: 'bar',
-                data: { labels: mLabels, datasets: [
-                    { type: 'line', label: 'Mood (1-5)', data: mData, borderColor: '#eab308', borderWidth: 2, tension: 0.3, yAxisID: 'y' },
-                    { type: 'bar', label: 'Completion Scaled', data: eData, backgroundColor: '#3b82f6', borderRadius: 4, yAxisID: 'y' }
-                ]},
-                options: { maintainAspectRatio: false, plugins: { legend: { labels: { color: textCol, font: {family: 'Inter', size:11} } } }, scales: { x: { grid: { display: false }, ticks: { color: textCol } }, y: { min: 0, max: 5, grid: { color: gridCol }, ticks: { color: textCol } } } }
+            return false;
+        }
+        function dragEnd(e) { e.target.classList.remove('dragging'); dragSrcIndex = null; }
+
+        function renderTodaysHabits() {
+            const container = document.getElementById('todays-habits-container'); container.innerHTML = '';
+            if(!appData.habits || appData.habits.length === 0) { container.innerHTML = `<p class="text-sm text-gray-400 mt-4 text-center">No habits found. Click 'Add' to begin!</p>`; return; }
+            appData.habits.forEach((habit, index) => {
+                const isCompleted = appData.completions[`${currentMonthKey}_${habit.id}_${todayDay}`];
+                const btnClass = isCompleted ? 'w-7 h-7 bg-green-500 rounded-lg text-white flex items-center justify-center cursor-pointer shadow-md transform scale-105 transition-all' : 'w-7 h-7 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-transparent flex items-center justify-center cursor-pointer hover:border-indigo-500 transition-all';
+                let color = habit.color || 'indigo'; let badgeClass = `text-${color}-600 bg-${color}-100 dark:bg-${color}-500/10 dark:text-${color}-400`;
+                container.innerHTML += `
+                    <div draggable="true" ondragstart="dragStart(event, ${index})" ondragover="dragOver(event)" ondrop="dragDrop(event, ${index})" ondragend="dragEnd(event)" class="hover-container flex justify-between items-center p-3 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl border border-gray-100 dark:border-gray-800 transition-colors cursor-move bg-white dark:bg-darkcard mb-2">
+                        <div class="flex items-center space-x-3 overflow-hidden">
+                            <i class="fa-solid fa-grip-vertical text-gray-300 dark:text-gray-600 hover:text-indigo-400 transition-colors cursor-grab px-1 flex-shrink-0"></i>
+                            <div class="min-w-0">
+                                <p class="font-bold text-gray-800 dark:text-gray-200 text-sm truncate">${habit.name}</p>
+                                <span class="text-[9px] font-black ${badgeClass} px-2 py-0.5 rounded-md uppercase tracking-wider mt-1 inline-block">${habit.priority || 'Medium'}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3 flex-shrink-0">
+                            <div class="action-icons flex text-gray-400 dark:text-gray-500 px-2"><i class="fa-solid fa-pen hover:text-indigo-500 dark:hover:text-indigo-400 cursor-pointer p-1" onclick="editHabit(${habit.id})"></i></div>
+                            <div onclick="toggleHabit(${habit.id}, ${todayDay})" class="${btnClass}">${isCompleted ? '<i class="fa-solid fa-check text-sm"></i>':''}</div>
+                        </div>
+                    </div>`;
             });
         }
 
-        // --- 8. NOTES & SETTINGS ---
-        function renderMdPreview() {
-            let val = document.getElementById('markdown-input').value;
-            if(window.marked) document.getElementById('markdown-preview').innerHTML = marked.parse(val);
-        }
-        function saveNotes() {
-            state.notes = document.getElementById('markdown-input').value;
-            saveState(); alert("Notes saved.");
-        }
-
-        function renderSettings() {
-            let wl = document.getElementById('webhook-list'); wl.innerHTML = '';
-            if(state.webhooks.length === 0) wl.innerHTML = '<p class="text-xs text-gray-500">No webhooks added.</p>';
-            state.webhooks.forEach((w,i) => {
-                wl.innerHTML += `<div class="flex justify-between items-center p-3 bg-bgDark border border-borderDark rounded-lg text-sm text-gray-300"><span class="truncate pr-4">${w}</span><button onclick="remHook(${i})" class="text-red-500 hover:text-red-400 font-semibold"><i class="fa-solid fa-trash"></i></button></div>`;
-            });
-        }
-        function addWebhook() {
-            let val = document.getElementById('new-webhook-url').value.trim();
-            if(val) { state.webhooks.push(val); document.getElementById('new-webhook-url').value = ''; saveState(); renderSettings(); }
-        }
-        function remHook(idx) { state.webhooks.splice(idx,1); saveState(); renderSettings(); }
-        function triggerWebhooks(hName) {
-            state.webhooks.forEach(url => {
-                fetch(url, { method: 'POST', mode: 'no-cors', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ event: 'habit_completed', habit: hName, time: new Date().toISOString() }) }).catch(e=>{});
-            });
-        }
-        function factoryReset() {
-            if(confirm("Are you sure? ALL DATA WILL BE DELETED.")) {
-                localStorage.removeItem(DB_KEY);
-                window.location.reload();
+        function renderHabitGrid() {
+            const table = document.getElementById('habit-table'); let habits = appData.habits || []; let totalActive = habits.length;
+            let thead = `<thead><tr class="text-gray-500 dark:text-gray-400 text-xs text-center border-b border-gray-100 dark:border-gray-800/50"><th class="text-left font-bold pb-3 px-2 w-32 sticky left-0 bg-white dark:bg-darkcard z-10 transition-colors uppercase tracking-wider">Habits</th>`;
+            for(let i=1; i<=daysInMonth; i++) { thead += `<th class="font-medium pb-3 px-1 ${i===todayDay ? 'text-indigo-600 dark:text-indigo-400 font-black text-sm' : ''}">${i}</th>`; }
+            thead += '</tr></thead><tbody class="text-gray-700 dark:text-gray-300">';
+            
+            if(totalActive === 0) {
+                thead += `<tr><td colspan="${daysInMonth+1}" class="text-center py-6 text-sm text-gray-400">No habits added yet.</td></tr></tbody>`;
+                table.innerHTML = thead; return;
             }
+
+            habits.forEach(habit => {
+                thead += `<tr class="border-b border-gray-50 dark:border-gray-800/30 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"><td class="py-2.5 px-2 font-semibold text-xs sticky left-0 bg-white dark:bg-darkcard z-10 truncate max-w-[120px] transition-colors">${habit.name}</td>`;
+                for(let i=1; i<=daysInMonth; i++) {
+                    const isChecked = appData.completions[`${currentMonthKey}_${habit.id}_${i}`]; const isFuture = i > todayDay; 
+                    const bgClass = i === todayDay ? 'bg-indigo-50/30 dark:bg-indigo-500/10' : '';
+                    let cellClass = isChecked ? 'checkbox-cell checked text-[10px]' : 'checkbox-cell';
+                    let icon = isChecked ? '<i class="fa-solid fa-check"></i>' : '';
+                    if(isFuture) { cellClass += ' opacity-20 cursor-not-allowed border-gray-200 dark:border-gray-700'; thead += `<td class="py-2.5 px-1 text-center ${bgClass}"><div class="mx-auto ${cellClass}">${icon}</div></td>`; } 
+                    else { thead += `<td class="py-2.5 px-1 text-center ${bgClass}"><div class="mx-auto ${cellClass}" onclick="toggleHabit(${habit.id}, ${i})">${icon}</div></td>`; }
+                } thead += '</tr>';
+            });
+            thead += '</tbody>';
+            let tfoot = '<tfoot class="bg-gray-50 dark:bg-darkbg/50 text-xs font-semibold text-gray-700 dark:text-gray-400 transition-colors border-t-2 border-gray-100 dark:border-gray-800">';
+            tfoot += `<tr><td class="py-3 px-2 sticky left-0 bg-gray-50 dark:bg-darkbg z-10 font-bold transition-colors">Progress %</td>`;
+            for(let i=1; i<=daysInMonth; i++) {
+                let done = 0; habits.forEach(h => { if(appData.completions[`${currentMonthKey}_${h.id}_${i}`]) done++; });
+                let perc = totalActive === 0 ? 0 : Math.round((done / totalActive) * 100);
+                tfoot += `<td class="py-3 px-1 text-center font-bold text-indigo-600 dark:text-indigo-400 opacity-${i > todayDay ? '20' : '100'}">${perc}%</td>`;
+            }
+            tfoot += '</tr></tfoot>'; table.innerHTML = thead + tfoot;
         }
 
-        // INIT
-        window.onload = loadState;
+        function renderSchedule() {
+            const container = document.getElementById('schedule-container'); container.innerHTML = '';
+            if(!appData.schedule || appData.schedule.length === 0) { container.innerHTML = `<p class="text-sm text-gray-400 mt-4 text-center">No schedule items found.</p>`; return; }
+            appData.schedule.forEach((s) => {
+                let color = s.color || 'indigo'; let badgeClass = `text-${color}-600 bg-${color}-100 dark:bg-${color}-500/10 dark:text-${color}-400`;
+                container.innerHTML += `<div class="hover-container flex justify-between items-center text-sm border border-transparent hover:border-gray-100 dark:hover:border-gray-800 p-3 rounded-xl transition-colors relative overflow-hidden group bg-white dark:bg-darkcard mb-2"><div class="w-2/5 text-gray-500 dark:text-gray-400 text-xs font-semibold whitespace-nowrap">${s.time}</div><div class="w-2/5 font-bold text-gray-800 dark:text-gray-200 truncate px-2">${s.activity}</div><div class="w-1/5 flex justify-end"><span class="text-[10px] font-black uppercase tracking-wider ${badgeClass} px-2 py-1 rounded-md truncate max-w-full">${s.category}</span></div><div class="action-icons absolute right-0 top-1/2 -translate-y-1/2 bg-gradient-to-l from-white via-white to-transparent dark:from-darkcard dark:via-darkcard pl-8 pr-4 py-2 text-gray-400 dark:text-gray-500"><button onclick="editSchedule(${s.id})" class="bg-white dark:bg-darkcard border border-gray-200 dark:border-gray-700 shadow-sm p-1.5 rounded-lg hover:text-indigo-500 transition-colors"><i class="fa-solid fa-pen"></i></button></div></div>`;
+            });
+        }
 
+        function renderWeeklyGoals() {
+            const container = document.getElementById('goals-container'); container.innerHTML = '';
+            if(!appData.weeklyGoals || appData.weeklyGoals.length === 0) { container.innerHTML = `<p class="text-sm text-gray-400 mt-4 text-center">No weekly goals set.</p>`; return; }
+            appData.weeklyGoals.forEach(goal => {
+                if(goal.type === 'progress') {
+                    let perc = Math.min(100, Math.round((goal.current / goal.target) * 100));
+                    container.innerHTML += `<div class="p-3 bg-gray-50 dark:bg-darkbg rounded-xl border border-gray-100 dark:border-gray-800 transition relative group"><div class="flex justify-between items-center mb-2"><span class="text-sm font-semibold text-gray-800 dark:text-gray-200">${goal.text}</span><span class="text-xs font-bold text-indigo-500">${goal.current} / ${goal.target}</span></div><div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-3 overflow-hidden"><div class="bg-indigo-500 h-2 rounded-full progress-bar-fill" style="width: ${perc}%"></div></div><div class="flex justify-between items-center"><div class="space-x-1"><button onclick="updateGoalProgress(${goal.id}, -1)" class="w-6 h-6 bg-white dark:bg-darkcard rounded text-gray-500 hover:text-red-500 shadow-sm border border-gray-200 dark:border-gray-700 font-bold">-</button><button onclick="updateGoalProgress(${goal.id}, 1)" class="w-6 h-6 bg-white dark:bg-darkcard rounded text-gray-500 hover:text-green-500 shadow-sm border border-gray-200 dark:border-gray-700 font-bold">+</button></div><button class="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition" onclick="deleteWeeklyGoal(${goal.id})"><i class="fa-solid fa-trash text-xs"></i></button></div></div>`;
+                } else {
+                    const checkedClass = goal.done ? 'line-through text-gray-400 dark:text-gray-600' : 'text-gray-800 dark:text-gray-200 font-semibold';
+                    const boxClass = goal.done ? 'checkbox-cell checked text-[10px]' : 'checkbox-cell';
+                    container.innerHTML += `<div class="hover-container flex justify-between items-center p-3 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl transition border border-transparent hover:border-gray-100 dark:border-gray-800"><div class="flex items-center space-x-3"><div class="${boxClass}" onclick="toggleWeeklyGoal(${goal.id})">${goal.done?'<i class="fa-solid fa-check"></i>':''}</div><span class="text-sm ${checkedClass} transition-colors">${goal.text}</span></div><div class="action-icons text-gray-400"><button class="hover:text-red-500 transition-colors" onclick="deleteWeeklyGoal(${goal.id})"><i class="fa-solid fa-trash text-xs"></i></button></div></div>`;
+                }
+            });
+        }
+
+        function renderBadges() {
+            let streak = calculateStreak(); let water = appData.waterIntake[todayStr] || 0;
+            let totalCompletions = Object.values(appData.completions).filter(v => v === true).length;
+            const badges = [
+                { name: "First Step", desc: "Complete 1st Habit", icon: "fa-seedling", color: "text-green-500", bg: "bg-green-100 dark:bg-green-500/10", unlocked: totalCompletions > 0 },
+                { name: "On Fire", desc: "7-Day Streak", icon: "fa-fire", color: "text-orange-500", bg: "bg-orange-100 dark:bg-orange-500/10", unlocked: streak >= 7 },
+                { name: "Unstoppable", desc: "30-Day Streak", icon: "fa-bolt", color: "text-yellow-500", bg: "bg-yellow-100 dark:bg-yellow-500/10", unlocked: streak >= 30 },
+                { name: "Hydrated", desc: "2L Water Today", icon: "fa-droplet", color: "text-blue-500", bg: "bg-blue-100 dark:bg-blue-500/10", unlocked: water >= 2.0 }
+            ];
+            let html = ''; badges.forEach(b => { let opacity = b.unlocked ? 'opacity-100 hover:-translate-y-1' : 'opacity-40 grayscale'; html += `<div class="bg-gray-50 dark:bg-darkbg rounded-2xl p-4 flex flex-col items-center justify-center text-center ${opacity} transition-all border border-gray-100 dark:border-gray-800"><div class="w-14 h-14 rounded-full ${b.bg} ${b.color} flex items-center justify-center text-2xl mb-3"><i class="fa-solid ${b.icon}"></i></div><p class="font-bold text-gray-900 dark:text-white text-sm">${b.name}</p><p class="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wider">${b.desc}</p></div>`; }); document.getElementById('badges-container').innerHTML = html;
+        }
+
+        // --- 5. Inputs & Logic ---
+        function toggleGoalTarget() { let type = document.getElementById('goalType').value; if(type === 'progress') document.getElementById('goalTargetDiv').classList.remove('hidden'); else document.getElementById('goalTargetDiv').classList.add('hidden'); }
+        function saveAdvancedGoal() {
+            try {
+                let title = document.getElementById('goalTitle').value.trim(); let type = document.getElementById('goalType').value; let target = parseInt(document.getElementById('goalTarget').value);
+                if(!title) return alert("Please enter goal name.");
+                if(!appData.weeklyGoals) appData.weeklyGoals = [];
+                if(type === 'progress') { if(isNaN(target) || target <= 0) return alert("Valid target needed."); appData.weeklyGoals.push({ id: Date.now(), text: title, type: 'progress', current: 0, target: target, done: false }); } 
+                else { appData.weeklyGoals.push({ id: Date.now(), text: title, type: 'checkbox', done: false }); }
+                closeModal('goalModal'); saveData();
+            } catch(e) { console.error(e); }
+        }
+        function updateGoalProgress(id, amt) { let goal = appData.weeklyGoals.find(g => g.id === id); if(goal && goal.type === 'progress') { goal.current += amt; if(goal.current < 0) goal.current = 0; if(goal.current >= goal.target) { goal.current = goal.target; goal.done = true; } else { goal.done = false; } saveData(); } }
+        function toggleHabit(habitId, day) { if(day > todayDay) return; const key = `${currentMonthKey}_${habitId}_${day}`; appData.completions[key] = !appData.completions[key]; saveData(); }
+        function toggleWeeklyGoal(id) { let goal = appData.weeklyGoals.find(g => g.id === id); if(goal && goal.type !== 'progress') { goal.done = !goal.done; saveData(); } }
+        function deleteWeeklyGoal(id) { appData.weeklyGoals = appData.weeklyGoals.filter(g => g.id !== id); saveData(); }
+        function modifyWater(amount) { let current = appData.waterIntake[todayStr] || 0; current += amount; if(current < 0) current = 0; appData.waterIntake[todayStr] = current; saveData(); }
+        function applyCustomWater(isAdding) { let input = document.getElementById('customWaterInput'); let val = parseFloat(input.value); if(!isNaN(val) && val > 0) { modifyWater(isAdding ? val : -val); input.value = ''; } }
+        function saveNotes() { appData.notes = document.getElementById('notes-area').value; localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); }
+
+        // --- Modals ---
+        function openModal(id) { 
+            document.getElementById(id).classList.add('active'); 
+            if(id === 'profileModal') { document.getElementById('profAvatar').value = appData.profile.avatar || ""; document.getElementById('profName').value = appData.profile.name || ""; document.getElementById('profDob').value = appData.profile.dob || ""; document.getElementById('profHeight').value = appData.profile.height || ""; document.getElementById('profWeight').value = appData.profile.weight || ""; document.getElementById('profBio').value = appData.profile.bio || ""; } 
+            else if(id === 'habitModal' && !document.getElementById('editHabitId').value) { document.getElementById('habitModalTitle').innerText = "Add New Habit"; document.getElementById('habitName').value = ''; document.getElementById('habitCategory').value = 'Health'; document.getElementById('habitPriority').value = 'Medium,yellow'; document.getElementById('deleteHabitBtn').classList.add('hidden'); } 
+            else if(id === 'scheduleModal' && !document.getElementById('editScheduleId').value) { document.getElementById('scheduleModalTitle').innerText = "Add Schedule Item"; document.getElementById('sHour').value = '09'; document.getElementById('sMin').value = '00'; document.getElementById('sAmPm').value = 'AM'; document.getElementById('eHour').value = '10'; document.getElementById('eMin').value = '00'; document.getElementById('eAmPm').value = 'AM'; document.getElementById('schedActivity').value = ''; document.getElementById('schedCategory').value = 'Study,blue'; document.getElementById('deleteSchedBtn').classList.add('hidden'); toggleCustomCategoryInput(); } 
+            else if(id === 'goalModal') { document.getElementById('goalTitle').value = ''; document.getElementById('goalType').value = 'checkbox'; document.getElementById('goalTarget').value = ''; toggleGoalTarget(); }
+        }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); if(id === 'habitModal') document.getElementById('editHabitId').value = ''; if(id === 'scheduleModal') document.getElementById('editScheduleId').value = ''; }
+        
+        function saveProfile() { appData.profile.avatar = document.getElementById('profAvatar').value.trim(); appData.profile.name = document.getElementById('profName').value.trim(); appData.profile.dob = document.getElementById('profDob').value; appData.profile.height = document.getElementById('profHeight').value; appData.profile.weight = document.getElementById('profWeight').value; appData.profile.bio = document.getElementById('profBio').value; closeModal('profileModal'); saveData(); }
+        
+        function editHabit(id) { let habit = appData.habits.find(h => h.id === id); if(habit) { document.getElementById('editHabitId').value = habit.id; document.getElementById('habitName').value = habit.name; document.getElementById('habitCategory').value = habit.category || "Health"; document.getElementById('habitPriority').value = `${habit.priority||'Medium'},${habit.color||'yellow'}`; document.getElementById('habitModalTitle').innerText = "Edit Habit"; document.getElementById('deleteHabitBtn').classList.remove('hidden'); openModal('habitModal'); } }
+        function deleteHabit() { let id = parseInt(document.getElementById('editHabitId').value); if(confirm("Delete forever?")) { appData.habits = appData.habits.filter(h => h.id !== id); closeModal('habitModal'); saveData(); } }
+        function saveHabit() {
+            try {
+                let id = document.getElementById('editHabitId').value; let name = document.getElementById('habitName').value.trim(); let cat = document.getElementById('habitCategory').value; let priorityEl = document.getElementById('habitPriority').value || 'Medium,yellow'; let val = priorityEl.split(',');
+                if(!name) return alert("Enter name");
+                if(!appData.habits) appData.habits = [];
+                if(id) { let index = appData.habits.findIndex(h => h.id == parseInt(id)); if(index !== -1) { appData.habits[index].name = name; appData.habits[index].category = cat; appData.habits[index].priority = val[0]; appData.habits[index].color = val[1]; } } 
+                else { appData.habits.push({ id: Date.now(), name: name, category: cat, priority: val[0], color: val[1] }); }
+                closeModal('habitModal'); saveData();
+            } catch(e) { console.error("Error saving habit", e); }
+        }
+
+        function toggleCustomCategoryInput() { let catSelect = document.getElementById('schedCategory').value; let customInput = document.getElementById('schedCustomCategory'); if (catSelect.startsWith('Custom')) { customInput.classList.remove('hidden'); } else { customInput.classList.add('hidden'); } }
+        function editSchedule(id) { let sched = appData.schedule.find(s => s.id === id); if(sched) { document.getElementById('editScheduleId').value = sched.id; document.getElementById('schedActivity').value = sched.activity; let times = sched.time.split(' - '); if(times.length === 2) { let [sT, sA] = times[0].split(' '); let [sH, sM] = sT.split(':'); document.getElementById('sHour').value = sH; document.getElementById('sMin').value = sM; document.getElementById('sAmPm').value = sA; let [eT, eA] = times[1].split(' '); let [eH, eM] = eT.split(':'); document.getElementById('eHour').value = eH; document.getElementById('eMin').value = eM; document.getElementById('eAmPm').value = eA; } const defaults = ["Study", "Health", "Work", "Life"]; if(defaults.includes(sched.category)) { document.getElementById('schedCategory').value = `${sched.category},${sched.color}`; document.getElementById('schedCustomCategory').value = ""; } else { document.getElementById('schedCategory').value = `Custom,gray`; document.getElementById('schedCustomCategory').value = sched.category; } toggleCustomCategoryInput(); document.getElementById('scheduleModalTitle').innerText = "Edit Schedule"; document.getElementById('deleteSchedBtn').classList.remove('hidden'); openModal('scheduleModal'); } }
+        function deleteSchedule() { let id = parseInt(document.getElementById('editScheduleId').value); if(confirm("Remove item?")) { appData.schedule = appData.schedule.filter(s => s.id !== id); closeModal('scheduleModal'); saveData(); } }
+        function saveSchedule() {
+            try {
+                let id = document.getElementById('editScheduleId').value; let act = document.getElementById('schedActivity').value.trim(); let sH = document.getElementById('sHour').value; let sM = document.getElementById('sMin').value; let sA = document.getElementById('sAmPm').value; let eH = document.getElementById('eHour').value; let eM = document.getElementById('eMin').value; let eA = document.getElementById('eAmPm').value;
+                let catVals = document.getElementById('schedCategory').value.split(','); let categoryName = catVals[0]; let categoryColor = catVals[1]; if(categoryName === 'Custom') { let customName = document.getElementById('schedCustomCategory').value.trim(); if(!customName) return alert("Enter custom name."); categoryName = customName; } if(!act) return alert("Enter activity.");
+                let formattedTimeStr = `${sH}:${sM} ${sA} - ${eH}:${eM} ${eA}`;
+                if(!appData.schedule) appData.schedule = [];
+                if(id) { let index = appData.schedule.findIndex(s => s.id == parseInt(id)); if(index !== -1) { appData.schedule[index].time = formattedTimeStr; appData.schedule[index].activity = act; appData.schedule[index].category = categoryName; appData.schedule[index].color = categoryColor; } } 
+                else { appData.schedule.push({ id: Date.now(), time: formattedTimeStr, activity: act, category: categoryName, color: categoryColor }); }
+                closeModal('scheduleModal'); saveData();
+            } catch(e) { console.error("Error saving schedule", e); }
+        }
+
+        // --- Backup & Export ---
+        function exportData() {
+            const dataStr = JSON.stringify(appData); const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob); const link = document.createElement('a'); link.download = `FocusFlow_Backup_${todayStr}.json`; link.href = url; link.click();
+        }
+        function importData(event) {
+            const file = event.target.files[0]; if(!file) return; const reader = new FileReader();
+            reader.onload = function(e) { try { const imported = JSON.parse(e.target.result); if(imported && imported.habits) { appData = imported; saveData(); alert("Backup imported!"); } else { alert("Invalid file format."); } } catch(err) { alert("Error parsing file."); } }; reader.readAsText(file);
+        }
+
+        // --- Charts ---
+        let weeklyChartInstance = null; let mainAnalyticsChartInstance = null; let categoryPieChartInstance = null;
+        function updateChart() {
+            if(typeof Chart === 'undefined') return;
+            const wCtxEl = document.getElementById('weeklyChart'); if(!wCtxEl) return;
+            let wData = []; let wLabels = [];
+            for(let i = 6; i >= 0; i--) {
+                let d = new Date(); d.setDate(d.getDate() - i); let hDone = 0;
+                if(appData.habits) { appData.habits.forEach(h => { if(appData.completions[`${d.getFullYear()}-${d.getMonth()}_${h.id}_${d.getDate()}`]) hDone++; }); }
+                wData.push(Math.round((hDone/(appData.habits?appData.habits.length||1:1))*100)); wLabels.push(i === 0 ? 'Today' : `Day ${d.getDate()}`);
+            }
+            const wCtx = wCtxEl.getContext('2d'); if(weeklyChartInstance) weeklyChartInstance.destroy();
+            const gridColor = isDarkMode ? '#334155' : '#f1f5f9'; const textColor = isDarkMode ? '#94a3b8' : '#64748b'; 
+            weeklyChartInstance = new Chart(wCtx, { type: 'line', data: { labels: wLabels, datasets: [{ data: wData, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)', borderWidth: 3, fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: textColor } }, y: { min: 0, max: 100, grid: { color: gridColor, borderDash: [4, 4] }, ticks: { color: textColor, callback: v => v + '%' } } } } });
+        }
+
+        function setAnalyticsMode(mode) {
+            currentAnalyticsMode = mode; let btnM = document.getElementById('btn-mode-month'); let btnY = document.getElementById('btn-mode-year'); let pickerContainer = document.getElementById('analytics-time-picker');
+            if(mode === 'monthly') { btnM.className = "px-4 py-1.5 text-sm font-bold bg-indigo-600 text-white rounded-lg shadow-sm"; btnY.className = "px-4 py-1.5 text-sm font-bold text-gray-500 dark:text-gray-400 rounded-lg"; pickerContainer.innerHTML = `<input type="month" id="analyticsMonthPicker" class="p-2 border rounded-lg text-sm dark:bg-darkbg dark:border-gray-700 outline-none cursor-pointer" onchange="renderAnalytics()">`; document.getElementById('analyticsMonthPicker').value = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}`; } 
+            else { btnY.className = "px-4 py-1.5 text-sm font-bold bg-indigo-600 text-white rounded-lg shadow-sm"; btnM.className = "px-4 py-1.5 text-sm font-bold text-gray-500 dark:text-gray-400 rounded-lg"; pickerContainer.innerHTML = `<input type="number" id="analyticsYearPicker" min="2020" max="2100" value="${currentYear}" class="w-24 p-2 border rounded-lg text-sm dark:bg-darkbg dark:border-gray-700 outline-none cursor-pointer" onchange="renderAnalytics()">`; }
+            document.getElementById('analytics-chart-title').innerText = mode === 'monthly' ? "Daily Completion Rate (%)" : "Monthly Completion Rate (%)"; setTimeout(renderAnalytics, 50);
+        }
+
+        function renderAnalytics() {
+            if(typeof Chart === 'undefined') return;
+            const mCtxEl = document.getElementById('mainAnalyticsChart'); const pCtxEl = document.getElementById('categoryPieChart');
+            if(!mCtxEl || !pCtxEl) return;
+            const mCtx = mCtxEl.getContext('2d'); const pCtx = pCtxEl.getContext('2d');
+            if(mainAnalyticsChartInstance) mainAnalyticsChartInstance.destroy(); if(categoryPieChartInstance) categoryPieChartInstance.destroy();
+            const gridColor = isDarkMode ? '#334155' : '#f1f5f9'; const textColor = isDarkMode ? '#94a3b8' : '#64748b'; 
+            let mainData = []; let mainLabels = [];
+            
+            if(currentAnalyticsMode === 'monthly') {
+                let picker = document.getElementById('analyticsMonthPicker'); if(!picker || !picker.value) return; 
+                let [yStr, mStr] = picker.value.split('-'); let y = parseInt(yStr); let m = parseInt(mStr) - 1; let days = new Date(y, m + 1, 0).getDate();
+                for(let i=1; i<=days; i++) { let hDone = 0; if(appData.habits){ appData.habits.forEach(h => { if(appData.completions[`${y}-${m}_${h.id}_${i}`]) hDone++; }); } mainData.push(Math.round((hDone/(appData.habits?appData.habits.length||1:1))*100)); mainLabels.push(i.toString()); }
+                mainAnalyticsChartInstance = new Chart(mCtx, { type: 'bar', data: { labels: mainLabels, datasets: [{ data: mainData, backgroundColor: '#6366f1', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: textColor } }, y: { min: 0, max: 100, grid: { color: gridColor }, ticks: { color: textColor, callback: v => v + '%' } } } } });
+            } else {
+                let y = document.getElementById('analyticsYearPicker').value; const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                for(let m=0; m<12; m++) { let days = new Date(y, m + 1, 0).getDate(); let total = days * (appData.habits?appData.habits.length||1:1); let done = 0; for(let i=1; i<=days; i++) { if(appData.habits) { appData.habits.forEach(h => { if(appData.completions[`${y}-${m}_${h.id}_${i}`]) done++; }); } } mainData.push(Math.round((done/(total||1))*100)); mainLabels.push(monthNames[m]); }
+                mainAnalyticsChartInstance = new Chart(mCtx, { type: 'line', data: { labels: mainLabels, datasets: [{ data: mainData, borderColor: '#8b5cf6', fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: textColor } }, y: { min: 0, max: 100, grid: { color: gridColor, borderDash: [4, 4] }, ticks: { color: textColor, callback: v => v + '%' } } } } });
+            }
+            
+            let categories = {}; if(appData.habits) { appData.habits.forEach(h => { let c = h.category || 'Other'; categories[c] = (categories[c] || 0) + 1; }); }
+            categoryPieChartInstance = new Chart(pCtx, { type: 'doughnut', data: { labels: Object.keys(categories), datasets: [{ data: Object.values(categories), backgroundColor: ['#6366f1', '#ec4899', '#14b8a6', '#f59e0b', '#8b5cf6'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { color: textColor } } } } });
+        }
+
+        // Initialize execution safely
+        window.addEventListener('DOMContentLoaded', () => { renderAll(); });
     </script>
 </body>
 </html>
