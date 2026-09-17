@@ -61,6 +61,36 @@
 </head>
 <body class="text-gray-800 bg-slate-50 dark:bg-darkbg dark:text-gray-100 flex h-screen w-full overflow-hidden">
 
+    <!-- Firebase Auth Overlay -->
+    <div id="login-overlay" class="fixed inset-0 bg-slate-50 dark:bg-darkbg z-[100] flex flex-col items-center justify-center p-4">
+        <div class="bg-white dark:bg-darkcard rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 p-8 w-full max-w-md">
+            <div class="flex justify-center mb-4">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 border border-indigo-400 dark:border-indigo-600">
+                    <i class="fa-solid fa-crosshairs text-2xl opacity-100"></i>
+                </div>
+            </div>
+            <h2 class="text-2xl font-black text-center text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 mb-6">FocusFlow Login</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Email</label>
+                    <input type="email" id="auth-email" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 dark:bg-darkbg dark:text-white rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/50" placeholder="you@example.com">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Password</label>
+                    <input type="password" id="auth-pass" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 dark:bg-darkbg dark:text-white rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/50" placeholder="••••••••">
+                </div>
+                <div class="flex space-x-3 mt-6">
+                    <button onclick="handleLogin()" class="flex-1 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition shadow-md flex justify-center items-center">
+                        <span id="auth-btn-text">Login</span>
+                    </button>
+                    <button onclick="handleRegister()" class="flex-1 py-2.5 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 transition shadow-md flex justify-center items-center">
+                        <span id="auth-reg-text">Register</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
 
     <aside id="sidebar" class="w-64 flex-shrink-0 bg-white dark:bg-darkcard border-r border-gray-200 dark:border-gray-800 flex flex-col transition-transform transform -translate-x-full lg:translate-x-0 fixed lg:relative z-50 h-full shadow-2xl lg:shadow-none">
@@ -266,7 +296,7 @@
                             <div id="prof-view-initials" class="w-32 h-32 rounded-full border-4 border-white dark:border-darkcard shadow-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-4xl font-bold text-white">US</div>
                         </div>
                         <div class="flex-1 mt-4 md:mt-0 text-center md:text-left min-w-0">
-                            <h2 class="text-3xl font-black text-gray-900 dark:text-white truncate" id="prof-view-name">Vikas Reddy</h2>
+                            <h2 class="text-3xl font-black text-gray-900 dark:text-white truncate" id="prof-view-name">User Name</h2>
                             <p class="text-gray-500 dark:text-gray-400 mt-1 max-w-lg break-words" id="prof-view-bio">Add a bio to your profile to personalize your dashboard.</p>
                         </div>
                         <button onclick="openModal('profileModal')" class="mt-6 md:mt-0 px-5 py-2.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold text-sm rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition shadow-sm flex-shrink-0"><i class="fa-solid fa-pen mr-2"></i>EDIT PROFILE</button>
@@ -321,7 +351,7 @@
                 <div class="bg-white dark:bg-darkcard rounded-2xl shadow-sm border border-red-200 dark:border-red-900/50 p-6">
                     <h3 class="text-lg font-bold text-red-600 dark:text-red-400 flex items-center mb-4"><i class="fa-solid fa-triangle-exclamation mr-2"></i>Danger Zone</h3>
                     <div class="flex flex-col sm:flex-row gap-4">
-                        <button onclick="alert('You have been logged out. (Simulation)')" class="px-5 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition shadow-sm border border-gray-200 dark:border-gray-700 flex-1">Logout</button>
+                        <button onclick="handleLogout()" class="px-5 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition shadow-sm border border-gray-200 dark:border-gray-700 flex-1">Logout</button>
                         <button onclick="resetAllData()" class="px-5 py-2.5 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 transition shadow-sm flex-1">Delete All Data & Reset</button>
                     </div>
                 </div>
@@ -455,6 +485,7 @@
         </div>
     </div>
 
+    <!-- Main Logic -->
     <script>
         // --- 1. View & Sidebar Logic ---
         let currentAnalyticsMode = 'monthly';
@@ -522,7 +553,7 @@
         }
         function toggleDarkMode() { isDarkMode = !isDarkMode; localStorage.setItem('focusflow_dark', isDarkMode); applyTheme(); updateChart(); if(document.getElementById('analytics-section').style.display === 'flex') setAnalyticsMode(currentAnalyticsMode); }
 
-        // --- 3. Data Architecture (BUMPED TO V16 FOR CLEAN SLATE) ---
+        // --- 3. Data Architecture ---
         const STORAGE_KEY = 'focusflow_pro_v16_final'; 
         const dateObj = new Date();
         const currentMonth = dateObj.getMonth(); const currentYear = dateObj.getFullYear(); const todayDay = dateObj.getDate();
@@ -560,9 +591,16 @@
                 };
             }
         }
-        let appData = getInitialData();
+        
+        var appData = getInitialData();
 
-        function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); renderAll(); }
+        function saveData() { 
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); 
+            renderAll(); 
+            // Trigger Firebase sync if module has loaded it
+            if (window.syncToFirestore) window.syncToFirestore(appData);
+        }
+
         function saveSettings() { appData.settings.waterReminder = document.getElementById('water-toggle').checked; appData.settings.waterHours = document.getElementById('water-hours').value; appData.settings.waterMins = document.getElementById('water-mins').value; saveData(); }
         function resetAllData() { if(confirm("Delete ALL tracking data? Profile remains.")) { appData.habits = []; appData.completions = {}; appData.schedule = []; appData.weeklyGoals = []; appData.waterIntake = {}; appData.notes = ""; saveData(); switchView('dashboard'); } }
         function calculateAge(dobStr) { if(!dobStr) return "--"; let dob = new Date(dobStr); let ageDate = new Date(Date.now() - dob.getTime()); return Math.abs(ageDate.getUTCFullYear() - 1970); }
@@ -580,7 +618,7 @@
         }
 
         // --- 4. Core Render Functions ---
-        function renderAll() {
+        window.renderAll = function() {
             try {
                 const firstName = appData.profile.name.split(' ')[0] || "User"; const initials = (appData.profile.name.substring(0,2) || "US").toUpperCase();
                 document.getElementById('welcome-text').innerHTML = `Welcome back, <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500">${firstName}</span> 👋`;
@@ -748,7 +786,7 @@
         function deleteWeeklyGoal(id) { appData.weeklyGoals = appData.weeklyGoals.filter(g => g.id !== id); saveData(); }
         function modifyWater(amount) { let current = appData.waterIntake[todayStr] || 0; current += amount; if(current < 0) current = 0; appData.waterIntake[todayStr] = current; saveData(); }
         function applyCustomWater(isAdding) { let input = document.getElementById('customWaterInput'); let val = parseFloat(input.value); if(!isNaN(val) && val > 0) { modifyWater(isAdding ? val : -val); input.value = ''; } }
-        function saveNotes() { appData.notes = document.getElementById('notes-area').value; localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); }
+        function saveNotes() { appData.notes = document.getElementById('notes-area').value; saveData(); }
 
         // --- Modals ---
         function openModal(id) { 
@@ -846,9 +884,105 @@
             let categories = {}; if(appData.habits) { appData.habits.forEach(h => { let c = h.category || 'Other'; categories[c] = (categories[c] || 0) + 1; }); }
             categoryPieChartInstance = new Chart(pCtx, { type: 'doughnut', data: { labels: Object.keys(categories), datasets: [{ data: Object.values(categories), backgroundColor: ['#6366f1', '#ec4899', '#14b8a6', '#f59e0b', '#8b5cf6'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { color: textColor } } } } });
         }
+    </script>
 
-        // Initialize execution safely
-        window.addEventListener('DOMContentLoaded', () => { renderAll(); });
+    <!-- Firebase SDK & Integration -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        // TODO: Replace with your actual Firebase project configuration
+        const firebaseConfig = {
+             apiKey: "AIzaSyDan_5JTc0twucw2hpdduZ0Tqjqjdwvbqg",
+            authDomain: "habittracker-30a0b.firebaseapp.com",
+            projectId: "habittracker-30a0b",
+            storageBucket: "habittracker-30a0b.firebasestorage.app",
+            messagingSenderId: "584171575847",
+            appId: "1:584171575847:web:91272ece881371b91fcc02"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Global function to sync the data back to Firestore anytime it saves locally
+        window.syncToFirestore = async function(data) {
+            const user = auth.currentUser;
+            if (user) {
+                try {
+                    await setDoc(doc(db, "users", user.uid), data, { merge: true });
+                } catch (e) {
+                    console.error("Error syncing to Firestore:", e);
+                }
+            }
+        };
+
+        // Authentication Event Handlers
+        window.handleLogin = async function() {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-pass').value;
+            if (!email || !pass) return alert("Please enter email and password.");
+            
+            try {
+                document.getElementById('auth-btn-text').innerText = "Logging in...";
+                await signInWithEmailAndPassword(auth, email, pass);
+            } catch(e) { 
+                alert(e.message); 
+                document.getElementById('auth-btn-text').innerText = "Login";
+            }
+        };
+
+        window.handleRegister = async function() {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-pass').value;
+            if (!email || !pass) return alert("Please enter email and password.");
+            
+            try {
+                document.getElementById('auth-reg-text').innerText = "Registering...";
+                await createUserWithEmailAndPassword(auth, email, pass);
+            } catch(e) { 
+                alert(e.message); 
+                document.getElementById('auth-reg-text').innerText = "Register";
+            }
+        };
+
+        window.handleLogout = async function() {
+            try {
+                await signOut(auth);
+            } catch(e) { alert("Error signing out: " + e.message); }
+        };
+
+        // Watch Authentication State and load initial data
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Hide login overlay
+                document.getElementById('login-overlay').style.display = 'none';
+                
+                try {
+                    // Fetch user's document from Firestore
+                    const docRef = doc(db, "users", user.uid);
+                    const docSnap = await getDoc(docRef);
+                    
+                    if (docSnap.exists()) {
+                        window.appData = docSnap.data();
+                    } else {
+                        // User exists in auth but no firestore data yet - use local base config & sync
+                        window.syncToFirestore(window.appData);
+                    }
+                    // Trigger the UI paint after data is loaded
+                    if (window.renderAll) window.renderAll();
+                } catch(e) {
+                    console.error("Error fetching data from Firestore", e);
+                    if (window.renderAll) window.renderAll();
+                }
+            } else {
+                // Show login overlay if completely logged out
+                document.getElementById('login-overlay').style.display = 'flex';
+                document.getElementById('auth-btn-text').innerText = "Login";
+                document.getElementById('auth-reg-text').innerText = "Register";
+            }
+        });
     </script>
 </body>
 </html>
