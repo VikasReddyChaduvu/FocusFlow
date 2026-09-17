@@ -892,9 +892,9 @@
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-        // TODO: Replace with your actual Firebase project configuration
+        // 🚨 CRITICAL: Replace these values with your actual Firebase Project Settings 🚨
         const firebaseConfig = {
-             apiKey: "AIzaSyDan_5JTc0twucw2hpdduZ0Tqjqjdwvbqg",
+            apiKey: "AIzaSyDan_5JTc0twucw2hpdduZ0Tqjqjdwvbqg",
             authDomain: "habittracker-30a0b.firebaseapp.com",
             projectId: "habittracker-30a0b",
             storageBucket: "habittracker-30a0b.firebasestorage.app",
@@ -902,6 +902,7 @@
             appId: "1:584171575847:web:91272ece881371b91fcc02"
         };
 
+        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -920,44 +921,62 @@
 
         // Authentication Event Handlers
         window.handleLogin = async function() {
-            const email = document.getElementById('auth-email').value;
+            const email = document.getElementById('auth-email').value.trim();
             const pass = document.getElementById('auth-pass').value;
-            if (!email || !pass) return alert("Please enter email and password.");
+            const btnText = document.getElementById('auth-btn-text');
+            
+            if (!email || !pass) return alert("Please enter both email and password.");
             
             try {
-                document.getElementById('auth-btn-text').innerText = "Logging in...";
+                btnText.innerText = "Logging in...";
                 await signInWithEmailAndPassword(auth, email, pass);
+                // Success: onAuthStateChanged will hide the overlay automatically
             } catch(e) { 
-                alert(e.message); 
-                document.getElementById('auth-btn-text').innerText = "Login";
+                alert("Login Failed: " + e.message); 
+                console.error(e);
+            } finally {
+                btnText.innerText = "Login";
             }
         };
 
         window.handleRegister = async function() {
-            const email = document.getElementById('auth-email').value;
+            const email = document.getElementById('auth-email').value.trim();
             const pass = document.getElementById('auth-pass').value;
-            if (!email || !pass) return alert("Please enter email and password.");
+            const regText = document.getElementById('auth-reg-text');
+
+            if (!email || !pass) return alert("Please enter both email and password.");
             
             try {
-                document.getElementById('auth-reg-text').innerText = "Registering...";
+                regText.innerText = "Registering...";
                 await createUserWithEmailAndPassword(auth, email, pass);
+                alert("Account created successfully!");
+                // Success: onAuthStateChanged will hide the overlay automatically
             } catch(e) { 
-                alert(e.message); 
-                document.getElementById('auth-reg-text').innerText = "Register";
+                alert("Registration Failed: " + e.message); 
+                console.error(e);
+            } finally {
+                regText.innerText = "Register";
             }
         };
 
         window.handleLogout = async function() {
             try {
                 await signOut(auth);
-            } catch(e) { alert("Error signing out: " + e.message); }
+                alert("You have been logged out.");
+                // Force a page reload to completely clear the local state and reset the UI
+                window.location.reload();
+            } catch(e) { 
+                alert("Error signing out: " + e.message); 
+            }
         };
 
         // Watch Authentication State and load initial data
         onAuthStateChanged(auth, async (user) => {
+            const overlay = document.getElementById('login-overlay');
+            
             if (user) {
-                // Hide login overlay
-                document.getElementById('login-overlay').style.display = 'none';
+                // User is signed in, hide login screen
+                overlay.style.display = 'none';
                 
                 try {
                     // Fetch user's document from Firestore
@@ -977,10 +996,10 @@
                     if (window.renderAll) window.renderAll();
                 }
             } else {
-                // Show login overlay if completely logged out
-                document.getElementById('login-overlay').style.display = 'flex';
-                document.getElementById('auth-btn-text').innerText = "Login";
-                document.getElementById('auth-reg-text').innerText = "Register";
+                // No user signed in, show login screen
+                overlay.style.display = 'flex';
+                document.getElementById('auth-email').value = '';
+                document.getElementById('auth-pass').value = '';
             }
         });
     </script>
