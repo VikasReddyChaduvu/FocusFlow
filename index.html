@@ -62,15 +62,44 @@
 <body class="text-gray-800 bg-slate-50 dark:bg-darkbg dark:text-gray-100 flex h-screen w-full overflow-hidden">
 
     <!-- Firebase Auth Overlay -->
-    <div id="login-overlay" class="fixed inset-0 bg-slate-50 dark:bg-darkbg z-[100] flex flex-col items-center justify-center p-4">
-        <div class="bg-white dark:bg-darkcard rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 p-8 w-full max-w-md">
+    <div id="login-overlay" class="fixed inset-0 bg-slate-50 dark:bg-darkbg z-[100] flex flex-col items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white dark:bg-darkcard rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 p-8 w-full max-w-md my-auto">
             <div class="flex justify-center mb-4">
                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 border border-indigo-400 dark:border-indigo-600">
                     <i class="fa-solid fa-crosshairs text-2xl opacity-100"></i>
                 </div>
             </div>
-            <h2 class="text-2xl font-black text-center text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 mb-6">FocusFlow Login</h2>
+            <h2 class="text-2xl font-black text-center text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 mb-6" id="auth-title">FocusFlow Login</h2>
+            
             <div class="space-y-4">
+                <!-- Toggle Form Mode -->
+                <div class="flex bg-gray-100 dark:bg-darkbg p-1 rounded-xl mb-4">
+                    <button id="tab-login" onclick="switchAuthMode('login')" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-white dark:bg-darkcard text-indigo-600 dark:text-indigo-400 shadow-sm transition">Login</button>
+                    <button id="tab-register" onclick="switchAuthMode('register')" class="flex-1 py-1.5 text-xs font-bold rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-800 transition">Register</button>
+                </div>
+
+                <!-- Registration-only Fields -->
+                <div id="reg-fields" class="space-y-3 hidden">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Full Name</label>
+                        <input type="text" id="auth-name" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 dark:bg-darkbg dark:text-white rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/50" placeholder="e.g. Vikas Reddy">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Date of Birth</label>
+                        <input type="date" id="auth-dob" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 dark:bg-darkbg dark:text-white rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/50">
+                    </div>
+                    <div class="flex space-x-3">
+                        <div class="w-1/2">
+                            <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Height (cm)</label>
+                            <input type="number" id="auth-height" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 dark:bg-darkbg dark:text-white rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/50" placeholder="175">
+                        </div>
+                        <div class="w-1/2">
+                            <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Weight (kg)</label>
+                            <input type="number" step="0.1" id="auth-weight" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 dark:bg-darkbg dark:text-white rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/50" placeholder="70.0">
+                        </div>
+                    </div>
+                </div>
+
                 <div>
                     <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Email</label>
                     <input type="email" id="auth-email" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 dark:bg-darkbg dark:text-white rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/50" placeholder="you@example.com">
@@ -79,12 +108,13 @@
                     <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Password</label>
                     <input type="password" id="auth-pass" class="w-full p-2.5 border border-gray-200 dark:border-gray-700 dark:bg-darkbg dark:text-white rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/50" placeholder="••••••••">
                 </div>
-                <div class="flex space-x-3 mt-6">
-                    <button onclick="handleLogin()" class="flex-1 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition shadow-md flex justify-center items-center">
+
+                <div class="mt-6">
+                    <button id="btn-submit-login" onclick="handleLogin()" class="w-full py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition shadow-md flex justify-center items-center">
                         <span id="auth-btn-text">Login</span>
                     </button>
-                    <button onclick="handleRegister()" class="flex-1 py-2.5 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 transition shadow-md flex justify-center items-center">
-                        <span id="auth-reg-text">Register</span>
+                    <button id="btn-submit-reg" onclick="handleRegister()" class="w-full py-2.5 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 transition shadow-md flex justify-center items-center hidden">
+                        <span id="auth-reg-text">Register Account</span>
                     </button>
                 </div>
             </div>
@@ -144,7 +174,7 @@
             
             <div class="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-4 xl:gap-0" id="top-header-area">
                 <div class="min-w-0">
-                    <h2 class="text-3xl md:text-4xl font-extrabold tracking-tight truncate" id="welcome-text">Welcome back 👋</h2>
+                    <h2 class="text-3xl md:text-4xl font-extrabold tracking-tight truncate" id="welcome-text">Welcome 👋</h2>
                     <p class="text-gray-500 dark:text-gray-400 text-sm mt-2 font-medium">Stay consistent and achieve your goals today.</p>
                 </div>
                 
@@ -305,7 +335,7 @@
                         <div><p class="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-1">Age</p><p class="text-2xl font-black text-gray-900 dark:text-white" id="prof-view-age">--</p></div>
                         <div><p class="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-1">Height</p><p class="text-2xl font-black text-gray-900 dark:text-white" id="prof-view-height">-- cm</p></div>
                         <div><p class="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-1">Weight</p><p class="text-2xl font-black text-gray-900 dark:text-white" id="prof-view-weight">-- kg</p></div>
-                        <div><p class="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-1">Current Streak</p><p class="text-2xl font-black text-purple-500" id="prof-view-streak">--</p></div>
+                        <div><p class="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-1">Current Streak</p><p class="text-2xl font-black text-purple-500" id="prof-view-streak">0</p></div>
                     </div>
                 </div>
                 <div class="bg-white dark:bg-darkcard rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-8 transition-colors">
@@ -561,34 +591,34 @@
         const currentMonthKey = `${currentYear}-${currentMonth}`;
         const todayStr = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(todayDay).padStart(2,'0')}`;
 
+        function createEmptyUserData(profileData = {}) {
+            return {
+                profile: { 
+                    name: profileData.name || "", 
+                    dob: profileData.dob || "", 
+                    bio: "", 
+                    height: profileData.height || "", 
+                    weight: profileData.weight || "", 
+                    avatar: "" 
+                },
+                settings: { waterReminder: true, waterHours: 1, waterMins: 0 },
+                habits: [],
+                completions: {}, 
+                schedule: [],
+                weeklyGoals: [], 
+                waterIntake: {}, 
+                notes: ""
+            };
+        }
+
         function getInitialData() {
             try {
                 let raw = localStorage.getItem(STORAGE_KEY);
                 let data = raw ? JSON.parse(raw) : null;
-                if(!data) throw new Error("No data");
-                
-                return {
-                    profile: data.profile || { name: "Vikas Reddy", dob: "2000-01-01", bio: "", height: "178", weight: "67.0", avatar: "" },
-                    settings: data.settings || { waterReminder: true, waterHours: 1, waterMins: 0 },
-                    habits: Array.isArray(data.habits) ? data.habits : [],
-                    completions: data.completions || {}, 
-                    schedule: Array.isArray(data.schedule) ? data.schedule : [],
-                    weeklyGoals: Array.isArray(data.weeklyGoals) ? data.weeklyGoals : [], 
-                    waterIntake: data.waterIntake || {}, 
-                    notes: data.notes || ""
-                };
+                if(!data) return createEmptyUserData();
+                return data;
             } catch(e) {
-                return {
-                    profile: { name: "Vikas Reddy", dob: "2000-01-01", bio: "", height: "178", weight: "67.0", avatar: "" },
-                    settings: { waterReminder: true, waterHours: 1, waterMins: 0 },
-                    habits: [
-                        { id: 1, name: "Morning DSA", category: "Study", priority: "High", color: "red" },
-                        { id: 2, name: "Python", category: "Career", priority: "Medium", color: "yellow" },
-                        { id: 3, name: "System Design", category: "Study", priority: "Low", color: "green" }
-                    ],
-                    completions: {}, schedule: [{ id: 1, time: "06:00 AM - 07:00 AM", activity: "Morning Exercise", category: "Health", color: "green" }],
-                    weeklyGoals: [], waterIntake: {}, notes: ""
-                };
+                return createEmptyUserData();
             }
         }
         
@@ -597,13 +627,13 @@
         function saveData() { 
             localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); 
             renderAll(); 
-            // Trigger Firebase sync if module has loaded it
+            // Sync with Firestore if integrated
             if (window.syncToFirestore) window.syncToFirestore(appData);
         }
 
-        function saveSettings() { appData.settings.waterReminder = document.getElementById('water-toggle').checked; appData.settings.waterHours = document.getElementById('water-hours').value; appData.settings.waterMins = document.getElementById('water-mins').value; saveData(); }
+        function saveSettings() { appData.settings.waterReminder = document.getElementById('water-toggle').checked; saveData(); }
         function resetAllData() { if(confirm("Delete ALL tracking data? Profile remains.")) { appData.habits = []; appData.completions = {}; appData.schedule = []; appData.weeklyGoals = []; appData.waterIntake = {}; appData.notes = ""; saveData(); switchView('dashboard'); } }
-        function calculateAge(dobStr) { if(!dobStr) return "--"; let dob = new Date(dobStr); let ageDate = new Date(Date.now() - dob.getTime()); return Math.abs(ageDate.getUTCFullYear() - 1970); }
+        function calculateAge(dobStr) { if(!dobStr) return "--"; let dob = new Date(dobStr); if(isNaN(dob.getTime())) return "--"; let ageDate = new Date(Date.now() - dob.getTime()); return Math.abs(ageDate.getUTCFullYear() - 1970); }
 
         function calculateStreak() {
             let streak = 0; let checkDate = new Date();
@@ -620,7 +650,10 @@
         // --- 4. Core Render Functions ---
         window.renderAll = function() {
             try {
-                const firstName = appData.profile.name.split(' ')[0] || "User"; const initials = (appData.profile.name.substring(0,2) || "US").toUpperCase();
+                const nameStr = appData.profile.name || "User";
+                const firstName = nameStr.split(' ')[0] || "User"; 
+                const initials = (nameStr.substring(0,2) || "US").toUpperCase();
+                
                 document.getElementById('welcome-text').innerHTML = `Welcome back, <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500">${firstName}</span> 👋`;
                 
                 // Avatars
@@ -631,12 +664,15 @@
                 
                 document.getElementById('current-date-display').innerText = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                 document.getElementById('notes-area').value = appData.notes || "";
-                document.getElementById('prof-view-name').innerText = appData.profile.name || "Unknown User"; document.getElementById('prof-view-bio').innerText = appData.profile.bio || "Add a bio."; document.getElementById('prof-view-age').innerText = calculateAge(appData.profile.dob); document.getElementById('prof-view-height').innerText = (appData.profile.height || "--") + " cm"; document.getElementById('prof-view-weight').innerText = (appData.profile.weight || "--") + " kg"; document.getElementById('prof-view-streak').innerText = calculateStreak();
+                document.getElementById('prof-view-name').innerText = appData.profile.name || "User"; 
+                document.getElementById('prof-view-bio').innerText = appData.profile.bio || "Add a bio to your profile to personalize your dashboard."; 
+                document.getElementById('prof-view-age').innerText = calculateAge(appData.profile.dob); 
+                document.getElementById('prof-view-height').innerText = (appData.profile.height || "--") + " cm"; 
+                document.getElementById('prof-view-weight').innerText = (appData.profile.weight || "--") + " kg"; 
+                document.getElementById('prof-view-streak').innerText = calculateStreak();
                 
                 if(appData.settings) {
                     document.getElementById('water-toggle').checked = appData.settings.waterReminder || false;
-                    document.getElementById('water-hours').value = appData.settings.waterHours || 1;
-                    document.getElementById('water-mins').value = appData.settings.waterMins || 0;
                 }
             } catch(e) { console.error("Header rendering error", e); }
             
@@ -677,7 +713,7 @@
 
         function renderTodaysHabits() {
             const container = document.getElementById('todays-habits-container'); container.innerHTML = '';
-            if(!appData.habits || appData.habits.length === 0) { container.innerHTML = `<p class="text-sm text-gray-400 mt-4 text-center">No habits found. Click 'Add' to begin!</p>`; return; }
+            if(!appData.habits || appData.habits.length === 0) { container.innerHTML = `<p class="text-sm text-gray-400 mt-4 text-center">No habits added yet. Click '+ Add' to begin tracking!</p>`; return; }
             appData.habits.forEach((habit, index) => {
                 const isCompleted = appData.completions[`${currentMonthKey}_${habit.id}_${todayDay}`];
                 const btnClass = isCompleted ? 'w-7 h-7 bg-green-500 rounded-lg text-white flex items-center justify-center cursor-pointer shadow-md transform scale-105 transition-all' : 'w-7 h-7 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-transparent flex items-center justify-center cursor-pointer hover:border-indigo-500 transition-all';
@@ -706,7 +742,7 @@
             thead += '</tr></thead><tbody class="text-gray-700 dark:text-gray-300">';
             
             if(totalActive === 0) {
-                thead += `<tr><td colspan="${daysInMonth+1}" class="text-center py-6 text-sm text-gray-400">No habits added yet.</td></tr></tbody>`;
+                thead += `<tr><td colspan="${daysInMonth+1}" class="text-center py-6 text-sm text-gray-400">No habits added yet. Click '+ Add' to get started!</td></tr></tbody>`;
                 table.innerHTML = thead; return;
             }
 
@@ -734,7 +770,7 @@
 
         function renderSchedule() {
             const container = document.getElementById('schedule-container'); container.innerHTML = '';
-            if(!appData.schedule || appData.schedule.length === 0) { container.innerHTML = `<p class="text-sm text-gray-400 mt-4 text-center">No schedule items found.</p>`; return; }
+            if(!appData.schedule || appData.schedule.length === 0) { container.innerHTML = `<p class="text-sm text-gray-400 mt-4 text-center">No schedule items added today.</p>`; return; }
             appData.schedule.forEach((s) => {
                 let color = s.color || 'indigo'; let badgeClass = `text-${color}-600 bg-${color}-100 dark:bg-${color}-500/10 dark:text-${color}-400`;
                 container.innerHTML += `<div class="hover-container flex justify-between items-center text-sm border border-transparent hover:border-gray-100 dark:hover:border-gray-800 p-3 rounded-xl transition-colors relative overflow-hidden group bg-white dark:bg-darkcard mb-2"><div class="w-2/5 text-gray-500 dark:text-gray-400 text-xs font-semibold whitespace-nowrap">${s.time}</div><div class="w-2/5 font-bold text-gray-800 dark:text-gray-200 truncate px-2">${s.activity}</div><div class="w-1/5 flex justify-end"><span class="text-[10px] font-black uppercase tracking-wider ${badgeClass} px-2 py-1 rounded-md truncate max-w-full">${s.category}</span></div><div class="action-icons absolute right-0 top-1/2 -translate-y-1/2 bg-gradient-to-l from-white via-white to-transparent dark:from-darkcard dark:via-darkcard pl-8 pr-4 py-2 text-gray-400 dark:text-gray-500"><button onclick="editSchedule(${s.id})" class="bg-white dark:bg-darkcard border border-gray-200 dark:border-gray-700 shadow-sm p-1.5 rounded-lg hover:text-indigo-500 transition-colors"><i class="fa-solid fa-pen"></i></button></div></div>`;
@@ -835,7 +871,7 @@
         }
         function importData(event) {
             const file = event.target.files[0]; if(!file) return; const reader = new FileReader();
-            reader.onload = function(e) { try { const imported = JSON.parse(e.target.result); if(imported && imported.habits) { appData = imported; saveData(); alert("Backup imported!"); } else { alert("Invalid file format."); } } catch(err) { alert("Error parsing file."); } }; reader.readAsText(file);
+            reader.onload = function(e) { try { const imported = JSON.parse(e.target.result); if(imported) { appData = imported; saveData(); alert("Backup imported!"); } else { alert("Invalid file format."); } } catch(err) { alert("Error parsing file."); } }; reader.readAsText(file);
         }
 
         // --- Charts ---
@@ -846,8 +882,13 @@
             let wData = []; let wLabels = [];
             for(let i = 6; i >= 0; i--) {
                 let d = new Date(); d.setDate(d.getDate() - i); let hDone = 0;
-                if(appData.habits) { appData.habits.forEach(h => { if(appData.completions[`${d.getFullYear()}-${d.getMonth()}_${h.id}_${d.getDate()}`]) hDone++; }); }
-                wData.push(Math.round((hDone/(appData.habits?appData.habits.length||1:1))*100)); wLabels.push(i === 0 ? 'Today' : `Day ${d.getDate()}`);
+                if(appData.habits && appData.habits.length > 0) { 
+                    appData.habits.forEach(h => { if(appData.completions[`${d.getFullYear()}-${d.getMonth()}_${h.id}_${d.getDate()}`]) hDone++; }); 
+                    wData.push(Math.round((hDone/appData.habits.length)*100));
+                } else {
+                    wData.push(0);
+                }
+                wLabels.push(i === 0 ? 'Today' : `Day ${d.getDate()}`);
             }
             const wCtx = wCtxEl.getContext('2d'); if(weeklyChartInstance) weeklyChartInstance.destroy();
             const gridColor = isDarkMode ? '#334155' : '#f1f5f9'; const textColor = isDarkMode ? '#94a3b8' : '#64748b'; 
@@ -873,16 +914,42 @@
             if(currentAnalyticsMode === 'monthly') {
                 let picker = document.getElementById('analyticsMonthPicker'); if(!picker || !picker.value) return; 
                 let [yStr, mStr] = picker.value.split('-'); let y = parseInt(yStr); let m = parseInt(mStr) - 1; let days = new Date(y, m + 1, 0).getDate();
-                for(let i=1; i<=days; i++) { let hDone = 0; if(appData.habits){ appData.habits.forEach(h => { if(appData.completions[`${y}-${m}_${h.id}_${i}`]) hDone++; }); } mainData.push(Math.round((hDone/(appData.habits?appData.habits.length||1:1))*100)); mainLabels.push(i.toString()); }
+                for(let i=1; i<=days; i++) { let hDone = 0; if(appData.habits && appData.habits.length > 0){ appData.habits.forEach(h => { if(appData.completions[`${y}-${m}_${h.id}_${i}`]) hDone++; }); mainData.push(Math.round((hDone/appData.habits.length)*100)); } else { mainData.push(0); } mainLabels.push(i.toString()); }
                 mainAnalyticsChartInstance = new Chart(mCtx, { type: 'bar', data: { labels: mainLabels, datasets: [{ data: mainData, backgroundColor: '#6366f1', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: textColor } }, y: { min: 0, max: 100, grid: { color: gridColor }, ticks: { color: textColor, callback: v => v + '%' } } } } });
             } else {
                 let y = document.getElementById('analyticsYearPicker').value; const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-                for(let m=0; m<12; m++) { let days = new Date(y, m + 1, 0).getDate(); let total = days * (appData.habits?appData.habits.length||1:1); let done = 0; for(let i=1; i<=days; i++) { if(appData.habits) { appData.habits.forEach(h => { if(appData.completions[`${y}-${m}_${h.id}_${i}`]) done++; }); } } mainData.push(Math.round((done/(total||1))*100)); mainLabels.push(monthNames[m]); }
+                for(let m=0; m<12; m++) { let days = new Date(y, m + 1, 0).getDate(); let total = days * (appData.habits ? appData.habits.length : 0); let done = 0; for(let i=1; i<=days; i++) { if(appData.habits) { appData.habits.forEach(h => { if(appData.completions[`${y}-${m}_${h.id}_${i}`]) done++; }); } } mainData.push(total > 0 ? Math.round((done/total)*100) : 0); mainLabels.push(monthNames[m]); }
                 mainAnalyticsChartInstance = new Chart(mCtx, { type: 'line', data: { labels: mainLabels, datasets: [{ data: mainData, borderColor: '#8b5cf6', fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: textColor } }, y: { min: 0, max: 100, grid: { color: gridColor, borderDash: [4, 4] }, ticks: { color: textColor, callback: v => v + '%' } } } } });
             }
             
-            let categories = {}; if(appData.habits) { appData.habits.forEach(h => { let c = h.category || 'Other'; categories[c] = (categories[c] || 0) + 1; }); }
+            let categories = {}; if(appData.habits && appData.habits.length > 0) { appData.habits.forEach(h => { let c = h.category || 'Other'; categories[c] = (categories[c] || 0) + 1; }); } else { categories = { "No Habits": 1 }; }
             categoryPieChartInstance = new Chart(pCtx, { type: 'doughnut', data: { labels: Object.keys(categories), datasets: [{ data: Object.values(categories), backgroundColor: ['#6366f1', '#ec4899', '#14b8a6', '#f59e0b', '#8b5cf6'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { color: textColor } } } } });
+        }
+
+        // Auth View Switching Helper
+        function switchAuthMode(mode) {
+            const title = document.getElementById('auth-title');
+            const regFields = document.getElementById('reg-fields');
+            const btnLogin = document.getElementById('btn-submit-login');
+            const btnReg = document.getElementById('btn-submit-reg');
+            const tabLogin = document.getElementById('tab-login');
+            const tabReg = document.getElementById('tab-register');
+
+            if(mode === 'register') {
+                title.innerText = "Create Account";
+                regFields.classList.remove('hidden');
+                btnLogin.classList.add('hidden');
+                btnReg.classList.remove('hidden');
+                tabReg.className = "flex-1 py-1.5 text-xs font-bold rounded-lg bg-white dark:bg-darkcard text-indigo-600 dark:text-indigo-400 shadow-sm transition";
+                tabLogin.className = "flex-1 py-1.5 text-xs font-bold rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-800 transition";
+            } else {
+                title.innerText = "FocusFlow Login";
+                regFields.classList.add('hidden');
+                btnLogin.classList.remove('hidden');
+                btnReg.classList.add('hidden');
+                tabLogin.className = "flex-1 py-1.5 text-xs font-bold rounded-lg bg-white dark:bg-darkcard text-indigo-600 dark:text-indigo-400 shadow-sm transition";
+                tabReg.className = "flex-1 py-1.5 text-xs font-bold rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-800 transition";
+            }
         }
     </script>
 
@@ -892,7 +959,7 @@
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-        // 🚨 CRITICAL: Replace these values with your actual Firebase Project Settings 🚨
+        // 🚨 CRITICAL: Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyDan_5JTc0twucw2hpdduZ0Tqjqjdwvbqg",
             authDomain: "habittracker-30a0b.firebaseapp.com",
@@ -907,7 +974,7 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Global function to sync the data back to Firestore anytime it saves locally
+        // Global function to sync data back to Firestore
         window.syncToFirestore = async function(data) {
             const user = auth.currentUser;
             if (user) {
@@ -930,7 +997,6 @@
             try {
                 btnText.innerText = "Logging in...";
                 await signInWithEmailAndPassword(auth, email, pass);
-                // Success: onAuthStateChanged will hide the overlay automatically
             } catch(e) { 
                 alert("Login Failed: " + e.message); 
                 console.error(e);
@@ -942,20 +1008,37 @@
         window.handleRegister = async function() {
             const email = document.getElementById('auth-email').value.trim();
             const pass = document.getElementById('auth-pass').value;
+            const name = document.getElementById('auth-name').value.trim();
+            const dob = document.getElementById('auth-dob').value;
+            const height = document.getElementById('auth-height').value;
+            const weight = document.getElementById('auth-weight').value;
             const regText = document.getElementById('auth-reg-text');
 
-            if (!email || !pass) return alert("Please enter both email and password.");
-            
+            if (!email || !pass) return alert("Please enter email and password.");
+            if (!name) return alert("Please enter your full name.");
+
             try {
                 regText.innerText = "Registering...";
-                await createUserWithEmailAndPassword(auth, email, pass);
+                const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+                const user = userCredential.user;
+
+                // Create fresh, empty dashboard data with registered user profile
+                window.appData = createEmptyUserData({
+                    name: name,
+                    dob: dob,
+                    height: height,
+                    weight: weight
+                });
+
+                // Write directly to Firestore
+                await setDoc(doc(db, "users", user.uid), window.appData);
+                
                 alert("Account created successfully!");
-                // Success: onAuthStateChanged will hide the overlay automatically
             } catch(e) { 
                 alert("Registration Failed: " + e.message); 
                 console.error(e);
             } finally {
-                regText.innerText = "Register";
+                regText.innerText = "Register Account";
             }
         };
 
@@ -963,7 +1046,6 @@
             try {
                 await signOut(auth);
                 alert("You have been logged out.");
-                // Force a page reload to completely clear the local state and reset the UI
                 window.location.reload();
             } catch(e) { 
                 alert("Error signing out: " + e.message); 
@@ -975,28 +1057,25 @@
             const overlay = document.getElementById('login-overlay');
             
             if (user) {
-                // User is signed in, hide login screen
                 overlay.style.display = 'none';
                 
                 try {
-                    // Fetch user's document from Firestore
                     const docRef = doc(db, "users", user.uid);
                     const docSnap = await getDoc(docRef);
                     
                     if (docSnap.exists()) {
                         window.appData = docSnap.data();
                     } else {
-                        // User exists in auth but no firestore data yet - use local base config & sync
-                        window.syncToFirestore(window.appData);
+                        // If user doesn't have data yet, initialize empty context
+                        window.appData = createEmptyUserData();
+                        await window.syncToFirestore(window.appData);
                     }
-                    // Trigger the UI paint after data is loaded
                     if (window.renderAll) window.renderAll();
                 } catch(e) {
                     console.error("Error fetching data from Firestore", e);
                     if (window.renderAll) window.renderAll();
                 }
             } else {
-                // No user signed in, show login screen
                 overlay.style.display = 'flex';
                 document.getElementById('auth-email').value = '';
                 document.getElementById('auth-pass').value = '';
